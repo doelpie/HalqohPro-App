@@ -9,12 +9,13 @@ import MaterialsPanel from './components/MaterialsPanel';
 import ProgressPanel from './components/ProgressPanel';
 import SyncPanel from './components/SyncPanel';
 import Login from './components/Login';
-import { Group, Material, Progress, User } from './types';
-import { BookOpen, Users, Settings, Activity, LogOut } from 'lucide-react';
+import CalendarPanel from './components/CalendarPanel';
+import { Group, Material, Progress, Schedule, User } from './types';
+import { BookOpen, Users, Settings, Activity, LogOut, Calendar } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'progress' | 'groups' | 'materials' | 'sync'>('progress');
-  const [data, setData] = useState<{ groups: Group[], materials: Material[], progress: Progress[] } | null>(null);
+  const [activeTab, setActiveTab] = useState<'progress' | 'calendar' | 'groups' | 'materials' | 'sync'>('progress');
+  const [data, setData] = useState<{ groups: Group[], materials: Material[], progress: Progress[], schedules: Schedule[] } | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   const loadData = async () => {
@@ -37,6 +38,7 @@ export default function App() {
 
   const tabs = [
     { id: 'progress', label: 'Progres', icon: <Activity className="w-4 h-4 mr-2" />, show: true },
+    { id: 'calendar', label: 'Kalendar Kajian', icon: <Calendar className="w-4 h-4 mr-2" />, show: true },
     { id: 'groups', label: 'Kelompok', icon: <Users className="w-4 h-4 mr-2" />, show: true },
     { id: 'materials', label: 'Materi', icon: <BookOpen className="w-4 h-4 mr-2" />, show: true },
     { id: 'sync', label: 'Integrasi', icon: <Settings className="w-4 h-4 mr-2" />, show: user.role === 'Super Administrator' },
@@ -103,6 +105,7 @@ export default function App() {
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-6xl mx-auto h-full text-slate-800">
             {activeTab === 'progress' && <ProgressPanel groups={data.groups} materials={data.materials} progress={data.progress} refresh={loadData} user={user} />}
+            {activeTab === 'calendar' && <CalendarPanel groups={data.groups} schedules={data.schedules} refresh={loadData} user={user} />}
             {activeTab === 'groups' && <GroupsPanel groups={data.groups} refresh={loadData} user={user} />}
             {activeTab === 'materials' && <MaterialsPanel materials={data.materials} refresh={loadData} user={user} />}
             {activeTab === 'sync' && <SyncPanel />}

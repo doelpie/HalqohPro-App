@@ -27,3 +27,12 @@ export interface Progress {
   attendance: string[];
   notes: string;
 }
+
+export interface Schedule {
+  id: string;
+  groupId: string;
+  date: string;
+  time: string;
+  title: string;
+  description: string;
+}

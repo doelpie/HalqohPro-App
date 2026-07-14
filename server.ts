@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import fs from 'fs';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // --- Database Simulation ---
@@ -37,6 +37,7 @@ const defaultData = {
     { id: 'm16', meeting: 16, title: 'Kedudukan Doa Dalam Islam', slideLink: '', videoLink: '' }
   ],
   progress: [], // { groupId, meeting, date, attendance: string[], notes: string }
+  schedules: [], // { id, groupId, date, time, title, description }
   tokens: {}, // Google OAuth tokens
   users: [
     { id: 'u1', username: 'Admin Teguh', password: '@Teguh9495', role: 'Super Administrator', ustadzName: 'Teguh' },
@@ -81,7 +82,7 @@ app.post('/api/login', (req, res) => {
 
 app.get('/api/data', (req, res) => {
   const data = readDB();
-  res.json({ groups: data.groups, materials: data.materials, progress: data.progress });
+  res.json({ groups: data.groups, materials: data.materials, progress: data.progress, schedules: data.schedules || [] });
 });
 
 app.post('/api/groups', (req, res) => {
@@ -127,6 +128,28 @@ app.put('/api/materials/:id', (req, res) => {
     data.materials[index] = { ...data.materials[index], ...req.body };
     writeDB(data);
     res.json(data.materials[index]);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+app.post('/api/schedules', (req, res) => {
+  const data = readDB();
+  const record = { id: uuidv4(), ...req.body };
+  if (!data.schedules) data.schedules = [];
+  data.schedules.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
+app.put('/api/schedules/:id', (req, res) => {
+  const data = readDB();
+  if (!data.schedules) data.schedules = [];
+  const index = data.schedules.findIndex((s: any) => s.id === req.params.id);
+  if (index !== -1) {
+    data.schedules[index] = { ...data.schedules[index], ...req.body };
+    writeDB(data);
+    res.json(data.schedules[index]);
   } else {
     res.status(404).json({ error: 'Not found' });
   }

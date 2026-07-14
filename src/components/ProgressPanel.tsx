@@ -154,6 +154,33 @@ export default function ProgressPanel({ groups, materials, progress, refresh, us
           </table>
         </div>
       </div>
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6 flex-1 flex flex-col">
+        <h3 className="text-sm font-bold text-slate-800 p-5 border-b border-slate-200 uppercase tracking-wider">Progres Tiap Kelompok</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 p-5 gap-4">
+          {displayedGroups.map(group => {
+            const groupProgress = progress.filter(p => p.groupId === group.id);
+            const latestMeeting = groupProgress.length > 0 ? Math.max(...groupProgress.map(p => p.meeting)) : 0;
+            const totalMeetings = materials.length;
+            const progressPercent = totalMeetings > 0 ? (latestMeeting / totalMeetings) * 100 : 0;
+            const latestMaterial = materials.find(m => m.meeting === latestMeeting)?.title || 'Belum Ada';
+
+            return (
+              <div key={group.id} className="p-4 border border-slate-200 rounded-lg bg-slate-50">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-bold text-slate-800 text-sm">Kelompok Ustadz {group.ustadz}</h4>
+                  <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-2 py-1 rounded">
+                    Pertemuan {latestMeeting}/{totalMeetings}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
+                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${progressPercent}%` }}></div>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">Materi Terakhir: <span className="text-slate-700">{latestMaterial}</span></p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
