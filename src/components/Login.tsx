@@ -29,8 +29,8 @@ export default function Login({ onLogin }: { onLogin: (user: User) => void }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-      <div className="bg-white p-8 rounded-xl shadow-md border border-slate-200 w-full max-w-sm">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-[#f8fafc] px-4 py-8">
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-md border border-slate-200 w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center font-bold text-white text-2xl mb-4">H</div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">HalaqohPro</h1>

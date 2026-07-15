@@ -68,7 +68,7 @@ export default function ProgressPanel({ groups, materials, progress, refresh, us
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">Laporan Presensi</h2>
       </div>
@@ -124,7 +124,7 @@ export default function ProgressPanel({ groups, materials, progress, refresh, us
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <h3 className="text-sm font-bold text-slate-800 p-5 border-b border-slate-200 uppercase tracking-wider">Riwayat Kajian</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
@@ -154,7 +154,7 @@ export default function ProgressPanel({ groups, materials, progress, refresh, us
           </table>
         </div>
       </div>
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6 flex-1 flex flex-col">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
         <h3 className="text-sm font-bold text-slate-800 p-5 border-b border-slate-200 uppercase tracking-wider">Progres Tiap Kelompok</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 p-5 gap-4">
           {displayedGroups.map(group => {

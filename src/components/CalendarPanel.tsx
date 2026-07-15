@@ -80,7 +80,7 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">Kalender Kajian</h2>
         <div className="flex items-center gap-4">
@@ -91,41 +91,45 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
-          {DAYS.map(day => (
-            <div key={day} className="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-200 last:border-0">{day}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 flex-1 auto-rows-fr">
-          {blanks.map(b => (
-            <div key={`blank-${b}`} className="border-r border-b border-slate-100 bg-slate-50/50 min-h-[120px]"></div>
-          ))}
-          {days.map(d => {
-            const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-            const daySchedules = getSchedulesForDate(dateStr);
-            const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
+        <div className="overflow-x-auto flex-1 flex flex-col">
+          <div className="min-w-[700px] flex-1 flex flex-col">
+            <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 shrink-0">
+              {DAYS.map(day => (
+                <div key={day} className="py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-200 last:border-0">{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 flex-1 auto-rows-fr">
+              {blanks.map(b => (
+                <div key={`blank-${b}`} className="border-r border-b border-slate-100 bg-slate-50/50 min-h-[100px] sm:min-h-[120px]"></div>
+              ))}
+              {days.map(d => {
+                const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+                const daySchedules = getSchedulesForDate(dateStr);
+                const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
 
-            return (
-              <div key={d} className={`border-r border-b border-slate-100 min-h-[120px] p-2 relative group transition ${isToday ? 'bg-emerald-50/30' : 'hover:bg-slate-50'}`}>
-                <div className="flex justify-between items-start mb-1">
-                  <span className={`text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full ${isToday ? 'bg-emerald-600 text-white' : 'text-slate-700'}`}>{d}</span>
-                  <button onClick={() => openAddModal(d)} className="opacity-0 group-hover:opacity-100 p-1 text-emerald-600 hover:bg-emerald-100 rounded transition" title="Tambah Jadwal">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="space-y-1 mt-2">
-                  {daySchedules.map(s => {
-                    const group = groups.find(g => g.id === s.groupId);
-                    return (
-                      <div key={s.id} onClick={() => openEditModal(s)} className="text-[10px] p-1.5 bg-emerald-100 text-emerald-800 rounded cursor-pointer hover:bg-emerald-200 transition border border-emerald-200 truncate" title={`${s.time} - ${s.title}`}>
-                        <span className="font-bold">{s.time}</span> Ustadz {group?.ustadz}: {s.title}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+                return (
+                  <div key={d} className={`border-r border-b border-slate-100 min-h-[100px] sm:min-h-[120px] p-1.5 sm:p-2 relative group transition ${isToday ? 'bg-emerald-50/30' : 'hover:bg-slate-50'}`}>
+                    <div className="flex justify-between items-start mb-1">
+                      <span className={`text-sm font-semibold w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full ${isToday ? 'bg-emerald-600 text-white' : 'text-slate-700'}`}>{d}</span>
+                      <button onClick={() => openAddModal(d)} className="opacity-0 group-hover:opacity-100 p-1 text-emerald-600 hover:bg-emerald-100 rounded transition" title="Tambah Jadwal">
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-1 mt-2">
+                      {daySchedules.map(s => {
+                        const group = groups.find(g => g.id === s.groupId);
+                        return (
+                          <div key={s.id} onClick={() => openEditModal(s)} className="text-[9px] sm:text-[10px] p-1 sm:p-1.5 bg-emerald-100 text-emerald-800 rounded cursor-pointer hover:bg-emerald-200 transition border border-emerald-200 truncate" title={`${s.time} - ${s.title}`}>
+                            <span className="font-bold">{s.time}</span> Ust {group?.ustadz}: {s.title}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

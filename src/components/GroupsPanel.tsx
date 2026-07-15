@@ -46,7 +46,7 @@ export default function GroupsPanel({ groups, refresh, user }: { groups: Group[]
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">Manajemen Kelompok</h2>
         <div className="text-sm text-slate-500 font-medium">Total: {displayedGroups.length} Kelompok Halaqoh</div>

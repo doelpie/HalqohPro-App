@@ -42,7 +42,7 @@ export default function MaterialsPanel({ materials, refresh, user }: { materials
   const isSuperAdmin = user.role === 'Super Administrator';
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-900">Kurikulum Materi</h2>
       </div>
@@ -58,7 +58,7 @@ export default function MaterialsPanel({ materials, refresh, user }: { materials
                 className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
-                placeholder="e.g. Pembagian Tauhid"
+                placeholder="e.g. Peraturan Hidup Dalam Islam"
               />
             </div>
             <button 
@@ -71,7 +71,7 @@ export default function MaterialsPanel({ materials, refresh, user }: { materials
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50 border-b border-slate-200">
