@@ -161,7 +161,9 @@ const OAUTH_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'MISSING_CLIENT_ID';
 const OAUTH_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'MISSING_CLIENT_SECRET';
 
 const getOAuthClient = (req: express.Request) => {
-  const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/callback`;
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  const redirectUri = `${protocol}://${host}/api/auth/callback`;
   return new google.auth.OAuth2(
     OAUTH_CLIENT_ID,
     OAUTH_CLIENT_SECRET,
@@ -179,6 +181,7 @@ app.get('/api/auth/url', (req, res) => {
     scope: [
       'https://www.googleapis.com/auth/spreadsheets',
       'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/drive.file',
       'https://www.googleapis.com/auth/userinfo.profile'
     ],
   });
@@ -289,6 +292,38 @@ app.post('/api/calendar/add', async (req, res) => {
             requestBody: event,
         });
         res.json({ success: true, link: response.data.htmlLink });
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Backup to Google Drive
+app.post('/api/sync/drive', async (req, res) => {
+    const data = readDB();
+    if (!data.tokens.access_token) {
+        return res.status(401).json({ error: 'Not authenticated with Google' });
+    }
+
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials(data.tokens);
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    try {
+        const fileMetadata = {
+            name: `HalaqohPro_Backup_${new Date().toISOString().split('T')[0]}.json`,
+            mimeType: 'application/json'
+        };
+        const media = {
+            mimeType: 'application/json',
+            body: JSON.stringify(data, null, 2)
+        };
+        const file = await drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id'
+        });
+        res.json({ success: true, fileId: file.data.id });
     } catch (err: any) {
         console.error(err);
         res.status(500).json({ error: err.message });

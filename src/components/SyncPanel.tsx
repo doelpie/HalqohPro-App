@@ -50,6 +50,23 @@ export default function SyncPanel() {
     }
   };
 
+  const handleSyncDrive = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/sync/drive', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert('Berhasil dibackup ke Google Drive!');
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleExportCSV = () => {
     window.open('/api/reports/csv', '_blank');
   };
@@ -94,6 +111,20 @@ export default function SyncPanel() {
               className="px-5 py-2 w-full sm:w-auto bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-sm font-bold rounded-lg transition-colors disabled:opacity-50 shadow-sm shrink-0 whitespace-nowrap"
             >
               {syncing ? 'Syncing...' : 'Sync Sekarang'}
+            </button>
+          </div>
+
+          <div className="p-5 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-300 transition-colors">
+            <div>
+              <h4 className="font-bold text-slate-800">Google Drive Backup</h4>
+              <p className="text-sm font-medium text-slate-500 mt-1">Backup seluruh data aplikasi ke dalam Google Drive.</p>
+            </div>
+            <button 
+              onClick={handleSyncDrive}
+              disabled={!isConnected || syncing}
+              className="px-5 py-2 w-full sm:w-auto bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 text-sm font-bold rounded-lg transition-colors disabled:opacity-50 shadow-sm shrink-0 whitespace-nowrap"
+            >
+              {syncing ? 'Backing up...' : 'Backup ke Drive'}
             </button>
           </div>
 
