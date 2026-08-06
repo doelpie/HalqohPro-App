@@ -1,0 +1,7 @@
+{
+    "name": "halaqoh/app",
+    "description": "PHP Backend for Halaqoh App",
+    "require": {
+        "google/apiclient": "^2.15.0"
+    }
+}

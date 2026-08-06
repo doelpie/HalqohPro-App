@@ -38,6 +38,8 @@ const defaultData = {
   ],
   progress: [], // { groupId, meeting, date, attendance: string[], notes: string }
   schedules: [], // { id, groupId, date, time, title, description }
+  students: [], // { id, name, origin, address, phone, createdBy, groupId }
+  ustadz: [], // { id, name, origin, address, phone }
   tokens: {}, // Google OAuth tokens
   users: [
     { id: 'u1', username: 'Admin Teguh', password: '@Teguh9495', role: 'Super Administrator', ustadzName: 'Teguh' },
@@ -49,11 +51,49 @@ const defaultData = {
 
 function readDB() {
   if (fs.existsSync(DB_FILE)) {
-    const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    let data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    let modified = false;
+    
     if (!data.users) {
       data.users = defaultData.users;
+      modified = true;
+    }
+    
+    if (!data.students) {
+      data.students = [];
+      modified = true;
+    }
+    
+    if (!data.ustadz) {
+      data.ustadz = [];
+      modified = true;
+    }
+
+    // Migration: Extract Ustadz and Students from groups if our lists are empty
+    if (data.ustadz.length === 0 && data.groups) {
+      const ustadzSet = new Set<string>();
+      data.groups.forEach((g: any) => ustadzSet.add(g.ustadz));
+      Array.from(ustadzSet).forEach((name: string) => {
+        data.ustadz.push({ id: `u_${Date.now()}_${Math.random()}`, name, origin: '', address: '', phone: '' });
+      });
+      modified = true;
+    }
+
+    if (data.students.length === 0 && data.groups) {
+      const studentSet = new Set<string>();
+      data.groups.forEach((g: any) => {
+        g.students.forEach((s: string) => studentSet.add(s));
+      });
+      Array.from(studentSet).forEach((name: string) => {
+        data.students.push({ id: `s_${Date.now()}_${Math.random()}`, name, origin: '', address: '', phone: '', createdBy: 'System' });
+      });
+      modified = true;
+    }
+
+    if (modified) {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
     }
+    
     return data;
   }
   fs.writeFileSync(DB_FILE, JSON.stringify(defaultData, null, 2));
@@ -82,7 +122,14 @@ app.post('/api/login', (req, res) => {
 
 app.get('/api/data', (req, res) => {
   const data = readDB();
-  res.json({ groups: data.groups, materials: data.materials, progress: data.progress, schedules: data.schedules || [] });
+  res.json({ 
+    groups: data.groups, 
+    materials: data.materials, 
+    progress: data.progress, 
+    schedules: data.schedules || [],
+    students: data.students || [],
+    ustadz: data.ustadz || []
+  });
 });
 
 app.post('/api/groups', (req, res) => {
@@ -153,6 +200,76 @@ app.put('/api/schedules/:id', (req, res) => {
   } else {
     res.status(404).json({ error: 'Not found' });
   }
+});
+
+// --- Students API ---
+app.post('/api/students', (req, res) => {
+  const data = readDB();
+  if (!data.students) data.students = [];
+  const record = { id: uuidv4(), ...req.body };
+  data.students.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
+app.put('/api/students/:id', (req, res) => {
+  const data = readDB();
+  if (!data.students) data.students = [];
+  const index = data.students.findIndex((s: any) => s.id === req.params.id);
+  if (index !== -1) {
+    data.students[index] = { ...data.students[index], ...req.body };
+    writeDB(data);
+    res.json(data.students[index]);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+app.delete('/api/students/:id', (req, res) => {
+  const data = readDB();
+  if (!data.students) data.students = [];
+  data.students = data.students.filter((s: any) => s.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+// --- Ustadz API ---
+app.post('/api/ustadz', (req, res) => {
+  const data = readDB();
+  if (!data.ustadz) data.ustadz = [];
+  const record = { id: uuidv4(), ...req.body };
+  data.ustadz.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
+app.put('/api/ustadz/:id', (req, res) => {
+  const data = readDB();
+  if (!data.ustadz) data.ustadz = [];
+  const index = data.ustadz.findIndex((s: any) => s.id === req.params.id);
+  if (index !== -1) {
+    data.ustadz[index] = { ...data.ustadz[index], ...req.body };
+    writeDB(data);
+    res.json(data.ustadz[index]);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+app.delete('/api/ustadz/:id', (req, res) => {
+  const data = readDB();
+  if (!data.ustadz) data.ustadz = [];
+  data.ustadz = data.ustadz.filter((u: any) => u.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+app.delete('/api/groups/:id', (req, res) => {
+  const data = readDB();
+  if (!data.groups) data.groups = [];
+  data.groups = data.groups.filter((g: any) => g.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
 });
 
 // --- Google OAuth Integration ---

@@ -1,3 +1,21 @@
+export interface Student {
+  id: string;
+  name: string;
+  origin: string;
+  address: string;
+  phone: string;
+  createdBy: string; // The Ustadz who created this student
+  groupId?: string; // Optional: reference to the group they belong to
+}
+
+export interface Ustadz {
+  id: string;
+  name: string;
+  origin: string;
+  address: string;
+  phone: string;
+}
+
 export interface User {
   id: string;
   username: string;

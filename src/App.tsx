@@ -10,12 +10,14 @@ import ProgressPanel from './components/ProgressPanel';
 import SyncPanel from './components/SyncPanel';
 import Login from './components/Login';
 import CalendarPanel from './components/CalendarPanel';
-import { Group, Material, Progress, Schedule, User } from './types';
-import { BookOpen, Users, Settings, Activity, LogOut, Calendar, Menu } from 'lucide-react';
+import StudentsPanel from './components/StudentsPanel';
+import UstadzPanel from './components/UstadzPanel';
+import { Group, Material, Progress, Schedule, User, Student, Ustadz } from './types';
+import { BookOpen, Users, Settings, Activity, LogOut, Calendar, Menu, GraduationCap, UserCheck } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'progress' | 'calendar' | 'groups' | 'materials' | 'sync'>('progress');
-  const [data, setData] = useState<{ groups: Group[], materials: Material[], progress: Progress[], schedules: Schedule[] } | null>(null);
+  const [activeTab, setActiveTab] = useState<'progress' | 'calendar' | 'groups' | 'materials' | 'students' | 'ustadz' | 'sync'>('progress');
+  const [data, setData] = useState<{ groups: Group[], materials: Material[], progress: Progress[], schedules: Schedule[], students: Student[], ustadz: Ustadz[] } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -42,6 +44,8 @@ export default function App() {
     { id: 'calendar', label: 'Kalendar Kajian', icon: <Calendar className="w-4 h-4 mr-2" />, show: true },
     { id: 'groups', label: 'Kelompok', icon: <Users className="w-4 h-4 mr-2" />, show: true },
     { id: 'materials', label: 'Materi', icon: <BookOpen className="w-4 h-4 mr-2" />, show: true },
+    { id: 'students', label: 'Daftar Pelajar', icon: <GraduationCap className="w-4 h-4 mr-2" />, show: true },
+    { id: 'ustadz', label: 'Daftar Ustadz', icon: <UserCheck className="w-4 h-4 mr-2" />, show: true },
     { id: 'sync', label: 'Integrasi', icon: <Settings className="w-4 h-4 mr-2" />, show: user.role === 'Super Administrator' },
   ] as const;
 
@@ -126,8 +130,10 @@ export default function App() {
           <div className="max-w-6xl mx-auto min-h-full text-slate-800">
             {activeTab === 'progress' && <ProgressPanel groups={data.groups} materials={data.materials} progress={data.progress} refresh={loadData} user={user} />}
             {activeTab === 'calendar' && <CalendarPanel groups={data.groups} schedules={data.schedules} refresh={loadData} user={user} />}
-            {activeTab === 'groups' && <GroupsPanel groups={data.groups} refresh={loadData} user={user} />}
+            {activeTab === 'groups' && <GroupsPanel groups={data.groups} students={data.students} ustadzList={data.ustadz} refresh={loadData} user={user} changeTab={setActiveTab} />}
             {activeTab === 'materials' && <MaterialsPanel materials={data.materials} refresh={loadData} user={user} />}
+            {activeTab === 'students' && <StudentsPanel students={data.students} groups={data.groups} refresh={loadData} user={user} />}
+            {activeTab === 'ustadz' && <UstadzPanel ustadzList={data.ustadz} refresh={loadData} user={user} />}
             {activeTab === 'sync' && <SyncPanel />}
           </div>
         </div>
