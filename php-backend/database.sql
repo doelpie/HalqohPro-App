@@ -45,3 +45,31 @@ CREATE TABLE IF NOT EXISTS group_students (
     FOREIGN KEY (group_id) REFERENCES halaqoh_groups(id) ON DELETE CASCADE,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS materials (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    type VARCHAR(50),
+    target VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT,
+    material_id INT,
+    status VARCHAR(50),
+    date DATE,
+    notes TEXT,
+    ustadz VARCHAR(100),
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT,
+    day VARCHAR(50),
+    time VARCHAR(50),
+    type VARCHAR(50),
+    FOREIGN KEY (group_id) REFERENCES halaqoh_groups(id) ON DELETE CASCADE
+);

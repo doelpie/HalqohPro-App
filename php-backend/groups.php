@@ -1,8 +1,5 @@
 <?php
-require_once 'config.php';
-
-$current_role = $_SESSION['role'] ?? 'Super Administrator';
-$current_ustadz = $_SESSION['ustadz_name'] ?? 'Ustadz Fulan';
+require_once 'header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -89,142 +86,150 @@ while($row = $groupResult->fetch_assoc()) {
     $groups[] = $row;
 }
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Manajemen Kelompok</title>
-    <style>
-        body { font-family: sans-serif; padding: 2rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .form-group { margin-bottom: 15px; }
-        select, button { padding: 5px; }
-        .student-checkbox { margin-bottom: 5px; }
-    </style>
-</head>
-<body>
-    <h1>Manajemen Kelompok (PHP)</h1>
-    <a href="index.php">Kembali ke Beranda</a>
-    <hr>
-    
-    <h3>Tambah Kelompok</h3>
+
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col">
+    <h3 class="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Tambah Kelompok</h3>
     <form method="POST">
         <input type="hidden" name="action" value="add">
         
-        <div class="form-group">
-            <label>Pilih Ustadz:</label><br>
-            <select name="ustadz_id" required <?= $current_role !== 'Super Administrator' ? 'disabled' : '' ?>>
-                <option value="">-- Pilih Ustadz --</option>
-                <?php foreach($ustadzList as $u): ?>
-                    <option value="<?= $u['id'] ?>" <?= ($current_role !== 'Super Administrator' && $u['name'] === $current_ustadz) ? 'selected' : '' ?>><?= htmlspecialchars($u['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <?php if ($current_role !== 'Super Administrator'): ?>
-                <!-- We need to pass the selected Ustadz ID if disabled, since disabled inputs are not submitted -->
-                <?php foreach($ustadzList as $u): ?>
-                    <?php if ($u['name'] === $current_ustadz): ?>
-                        <input type="hidden" name="ustadz_id" value="<?= $u['id'] ?>">
+        <div class="grid gap-6 md:grid-cols-2">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Ustadz</label>
+                <div class="flex gap-2">
+                    <select name="ustadz_id" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white outline-none" <?= $current_role !== 'Super Administrator' ? 'disabled' : '' ?>>
+                        <option value="">-- Pilih Ustadz --</option>
+                        <?php foreach($ustadzList as $u): ?>
+                            <option value="<?= $u['id'] ?>" <?= ($current_role !== 'Super Administrator' && $u['name'] === $current_ustadz) ? 'selected' : '' ?>><?= htmlspecialchars($u['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if ($current_role !== 'Super Administrator'): ?>
+                        <?php foreach($ustadzList as $u): ?>
+                            <?php if ($u['name'] === $current_ustadz): ?>
+                                <input type="hidden" name="ustadz_id" value="<?= $u['id'] ?>">
+                            <?php endif; ?>
+                        <?php endforeach; ?>
                     <?php endif; ?>
-                <?php endforeach; ?>
-            <?php endif; ?>
-            <?php if ($current_role === 'Super Administrator'): ?>
-                <a href="ustadz.php"><button type="button">Tambah Ustadz</button></a>
-            <?php endif; ?>
+                    <?php if ($current_role === 'Super Administrator'): ?>
+                        <a href="ustadz.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg border border-slate-200 flex items-center justify-center">
+                            <i class="fas fa-plus"></i>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Pelajar</label>
+                <div class="flex gap-2 mb-3">
+                    <select id="student_select" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white outline-none" onchange="addStudent()">
+                        <option value="">-- Pilih Pelajar --</option>
+                        <?php foreach($studentList as $s): ?>
+                            <option value="<?= $s['id'] ?>" data-name="<?= htmlspecialchars($s['name']) ?>"><?= htmlspecialchars($s['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <a href="students.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-lg border border-slate-200 flex items-center justify-center">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                </div>
+                
+                <div id="selected_students_table" class="border border-slate-200 rounded-lg overflow-hidden hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-3 py-2">Nama Pelajar</th>
+                                <th class="px-3 py-2 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="selected_students_body" class="divide-y divide-slate-100 bg-white">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         
-        <div class="form-group">
-            <label>Pilih Pelajar:</label><br>
-            <select id="student_select">
-                <option value="">-- Pilih Pelajar --</option>
-                <?php foreach($studentList as $s): ?>
-                    <option value="<?= $s['id'] ?>" data-name="<?= htmlspecialchars($s['name']) ?>"><?= htmlspecialchars($s['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button type="button" onclick="addStudent()">Tambah ke List</button>
-            <a href="students.php"><button type="button">Tambah Pelajar Baru</button></a>
-        </div>
-        
-        <table id="selected_students_table" style="width: 50%; display: none; margin-bottom: 15px;">
-            <thead>
-                <tr><th>Nama Pelajar</th><th>Aksi</th></tr>
-            </thead>
-            <tbody id="selected_students_body">
-            </tbody>
-        </table>
-        
-        <button type="submit">Simpan Kelompok</button>
+        <button type="submit" class="mt-6 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm">
+            Simpan Kelompok
+        </button>
     </form>
+</div>
 
-    <script>
-        function addStudent() {
-            var select = document.getElementById('student_select');
-            var option = select.options[select.selectedIndex];
-            if (!option.value) return;
+<script>
+    function addStudent() {
+        var select = document.getElementById('student_select');
+        var option = select.options[select.selectedIndex];
+        if (!option.value) return;
 
-            var id = option.value;
-            var name = option.getAttribute('data-name');
+        var id = option.value;
+        var name = option.getAttribute('data-name');
 
-            // check if already added
-            if (document.getElementById('input_s_' + id)) {
-                alert('Pelajar sudah ada di list');
-                return;
-            }
-
-            var tbody = document.getElementById('selected_students_body');
-            var tr = document.createElement('tr');
-            tr.id = 'tr_s_' + id;
-            
-            tr.innerHTML = `
-                <td>${name}<input type="hidden" name="students[]" value="${id}" id="input_s_${id}"></td>
-                <td><button type="button" onclick="removeStudent('${id}')">Hapus</button></td>
-            `;
-            tbody.appendChild(tr);
-            
-            document.getElementById('selected_students_table').style.display = 'table';
-            select.value = '';
+        if (document.getElementById('input_s_' + id)) {
+            alert('Pelajar sudah ada di list');
+            return;
         }
 
-        function removeStudent(id) {
-            var tr = document.getElementById('tr_s_' + id);
-            if (tr) tr.remove();
-            
-            var tbody = document.getElementById('selected_students_body');
-            if (tbody.children.length === 0) {
-                document.getElementById('selected_students_table').style.display = 'none';
-            }
-        }
-    </script>
+        var tbody = document.getElementById('selected_students_body');
+        var tr = document.createElement('tr');
+        tr.id = 'tr_s_' + id;
+        
+        tr.innerHTML = `
+            <td class="px-3 py-2">${name}<input type="hidden" name="students[]" value="${id}" id="input_s_${id}"></td>
+            <td class="px-3 py-2 text-right">
+                <button type="button" onclick="removeStudent('${id}')" class="text-red-500 hover:bg-red-50 p-1 rounded">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        
+        document.getElementById('selected_students_table').style.display = 'block';
+        select.value = '';
+    }
 
-    <hr>
-    <h3>Daftar Kelompok</h3>
-    <table>
-        <tr>
-            <th>Ustadz</th>
-            <th>Pelajar</th>
-            <th>Aksi</th>
-        </tr>
-        <?php foreach($groups as $g): ?>
-        <tr>
-            <td><?= htmlspecialchars($g['ustadz_name']) ?></td>
-            <td>
-                <ul>
-                    <?php foreach($g['students'] as $sn): ?>
-                        <li><?= htmlspecialchars($sn) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </td>
-            <td>
-                <?php if ($current_role === 'Super Administrator'): ?>
-                <form method="POST" style="display:inline;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="<?= $g['id'] ?>">
-                    <button type="submit" onclick="return confirm('Yakin hapus kelompok ini?');">Hapus</button>
-                </form>
-                <?php endif; ?>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    </table>
-</body>
-</html>
+    function removeStudent(id) {
+        var tr = document.getElementById('tr_s_' + id);
+        if (tr) tr.remove();
+        
+        var tbody = document.getElementById('selected_students_body');
+        if (tbody.children.length === 0) {
+            document.getElementById('selected_students_table').style.display = 'none';
+        }
+    }
+</script>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <?php foreach($groups as $idx => $g): ?>
+    <?php
+        $bgColors = ['bg-emerald-50', 'bg-blue-50', 'bg-amber-50', 'bg-indigo-50'];
+        $textColors = ['text-emerald-700', 'text-blue-700', 'text-amber-700', 'text-indigo-700'];
+        $colorIdx = $idx % 4;
+    ?>
+    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-10 h-10 <?= $bgColors[$colorIdx] ?> <?= $textColors[$colorIdx] ?> rounded-lg flex items-center justify-center">
+                <i class="fas fa-users"></i>
+            </div>
+            <?php if ($current_role === 'Super Administrator'): ?>
+            <form method="POST">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="<?= $g['id'] ?>">
+                <button type="submit" onclick="return confirm('Yakin hapus kelompok ini?');" class="text-red-500 hover:bg-red-50 p-1.5 rounded-lg text-sm font-medium">Hapus</button>
+            </form>
+            <?php endif; ?>
+        </div>
+        
+        <h3 class="font-bold text-lg mb-2 text-slate-800">Kelompok <?= htmlspecialchars($g['ustadz_name']) ?></h3>
+        <div class="flex flex-wrap gap-2 mb-4">
+            <?php foreach($g['students'] as $sn): ?>
+                <span class="text-xs px-2 py-1 bg-slate-100 border border-slate-200 rounded-md text-slate-600 font-medium">
+                    <?= htmlspecialchars($sn) ?>
+                </span>
+            <?php endforeach; ?>
+        </div>
+        
+        <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span><?= count($g['students']) ?> Anggota</span>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<?php require_once 'footer.php'; ?>

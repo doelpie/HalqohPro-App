@@ -1,8 +1,5 @@
 <?php
-require_once 'config.php';
-
-$current_role = $_SESSION['role'] ?? 'Super Administrator';
-$current_ustadz = $_SESSION['ustadz_name'] ?? 'Ustadz Fulan';
+require_once 'header.php';
 
 // Fitur Daftar Pelajar (CRUD)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -21,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
         } else if ($action === 'edit') {
             $id = $_POST['id'] ?? 0;
-            // Additional check if needed for edit
             $stmt = $conn->prepare("UPDATE students SET name=?, origin=?, address=?, phone=? WHERE id=?");
             $stmt->bind_param("ssssi", $name, $origin, $address, $phone, $id);
             $stmt->execute();
@@ -42,71 +38,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $result = $conn->query("SELECT * FROM students");
 $students = $result->fetch_all(MYSQLI_ASSOC);
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Daftar Pelajar</title>
-    <style>
-        body { font-family: sans-serif; padding: 2rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .form-group { margin-bottom: 10px; }
-        input[type="text"] { width: 100%; padding: 5px; }
-        button { padding: 5px 10px; }
-    </style>
-</head>
-<body>
-    <h1>Daftar Pelajar</h1>
-    <a href="index.php">Kembali ke Beranda</a>
-    <hr>
-    
-    <h3>Tambah Pelajar</h3>
-    <form method="POST">
-        <input type="hidden" name="action" value="add">
-        <div class="form-group"><label>Nama Pelajar</label><input type="text" name="name" required></div>
-        <div class="form-group"><label>Daerah Asal</label><input type="text" name="origin"></div>
-        <div class="form-group"><label>Alamat Tinggal</label><input type="text" name="address"></div>
-        <div class="form-group"><label>Nomor HP WA</label><input type="text" name="phone"></div>
-        <button type="submit">Simpan</button>
-    </form>
 
-    <hr>
-    <h3>Data Pelajar</h3>
-    <table>
-        <tr>
-            <th>Nama</th>
-            <th>Daerah Asal</th>
-            <th>Alamat</th>
-            <th>Nomor HP</th>
-            <th>Dibuat Oleh</th>
-            <th>Aksi</th>
-        </tr>
-        <?php foreach($students as $s): ?>
-        <?php 
-            $can_edit = ($current_role === 'Super Administrator' || $s['created_by'] === $current_ustadz);
-            $can_delete = ($current_role === 'Super Administrator');
-        ?>
-        <tr>
-            <td><?= htmlspecialchars($s['name']) ?></td>
-            <td><?= htmlspecialchars($s['origin']) ?></td>
-            <td><?= htmlspecialchars($s['address']) ?></td>
-            <td><?= htmlspecialchars($s['phone']) ?></td>
-            <td><?= htmlspecialchars($s['created_by']) ?></td>
-            <td>
-                <?php if ($can_edit): ?>
-                    <!-- Edit functionality logic goes here if implemented -->
-                <?php endif; ?>
-                <?php if ($can_delete): ?>
-                <form method="POST" style="display:inline;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="<?= $s['id'] ?>">
-                    <button type="submit" onclick="return confirm('Yakin hapus?');">Hapus</button>
-                </form>
-                <?php endif; ?>
-            </td>
-        </tr>
-        <?php endforeach; ?>
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
+    <h3 class="text-sm font-bold text-slate-800 mb-4 uppercase tracking-wider">Tambah Pelajar</h3>
+    <form method="POST" class="space-y-4">
+        <input type="hidden" name="action" value="add">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Nama Pelajar</label>
+                <input type="text" name="name" required class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Daerah Asal</label>
+                <input type="text" name="origin" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Alamat Tinggal</label>
+                <input type="text" name="address" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Nomor HP / WA</label>
+                <input type="text" name="phone" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+        </div>
+        <button type="submit" class="px-6 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700">Simpan Pelajar</button>
+    </form>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <table class="w-full text-left">
+        <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+            <tr>
+                <th class="px-6 py-4">Nama</th>
+                <th class="px-6 py-4">Daerah Asal</th>
+                <th class="px-6 py-4">Alamat</th>
+                <th class="px-6 py-4">Nomor HP</th>
+                <th class="px-6 py-4 text-right">Aksi</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            <?php foreach($students as $s): ?>
+            <?php 
+                $can_delete = ($current_role === 'Super Administrator');
+            ?>
+            <tr class="hover:bg-slate-50">
+                <td class="px-6 py-4">
+                    <div class="font-bold text-slate-800"><?= htmlspecialchars($s['name']) ?></div>
+                    <div class="text-xs text-slate-400">Ditambahkan oleh: <?= htmlspecialchars($s['created_by']) ?></div>
+                </td>
+                <td class="px-6 py-4 text-sm text-slate-600"><?= htmlspecialchars($s['origin']) ?></td>
+                <td class="px-6 py-4 text-sm text-slate-600"><?= htmlspecialchars($s['address']) ?></td>
+                <td class="px-6 py-4 text-sm text-slate-600"><?= htmlspecialchars($s['phone']) ?></td>
+                <td class="px-6 py-4 text-right">
+                    <?php if ($can_delete): ?>
+                    <form method="POST" class="inline">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="<?= $s['id'] ?>">
+                        <button type="submit" onclick="return confirm('Yakin hapus?');" class="p-2 text-red-600 hover:bg-red-50 rounded-lg" title="Hapus">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
     </table>
-</body>
-</html>
+</div>
+
+<?php require_once 'footer.php'; ?>

@@ -1,77 +1,99 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) { if (session_status() === PHP_SESSION_NONE) { session_start(); } }
 require_once 'config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['set_role'])) {
     $_SESSION['role'] = $_POST['role'];
     $_SESSION['ustadz_name'] = $_POST['ustadz_name'];
+    $referer = $_SERVER['HTTP_REFERER'] ?? 'index.php';
+    header("Location: " . $referer);
+    exit;
 }
 
-$current_role = $_SESSION['role'] ?? 'Super Administrator';
-$current_ustadz = $_SESSION['ustadz_name'] ?? 'Ustadz Fulan';
+require_once 'header.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Halaqoh (PHP & MySQL)</title>
-    <style>
-        body { font-family: sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; line-height: 1.6; }
-        .card { border: 1px solid #ccc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem; }
-        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
-        .btn-success { background: #28a745; }
-    </style>
-</head>
-<body>
-    <h1>Aplikasi Halaqoh (Versi PHP/MySQL)</h1>
-    <p>Ini adalah kerangka dasar aplikasi jika dijalankan di CPanel menggunakan PHP dan MySQL.</p>
-    
-    <div class="card">
-        <h2>Simulasi Role</h2>
-        <form method="POST">
-            <input type="hidden" name="set_role" value="1">
-            Role: 
-            <select name="role">
-                <option value="Super Administrator" <?= $current_role === 'Super Administrator' ? 'selected' : '' ?>>Super Administrator</option>
-                <option value="Ustadz" <?= $current_role === 'Ustadz' ? 'selected' : '' ?>>Ustadz</option>
-            </select>
-            Nama Ustadz (jika role Ustadz):
-            <input type="text" name="ustadz_name" value="<?= htmlspecialchars($current_ustadz) ?>">
-            <button type="submit">Simpan Role</button>
-        </form>
+
+<!-- Dashboard Content -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-users text-xl"></i>
+        </div>
+        <h3 class="text-slate-500 font-medium">Total Kelompok</h3>
+        <p class="text-3xl font-bold text-slate-800">
+            <?php 
+                $res = $conn->query("SELECT COUNT(*) as c FROM halaqoh_groups");
+                echo $res ? $res->fetch_assoc()['c'] : '0';
+            ?>
+        </p>
     </div>
     
-    <div class="card">
-        <h2>Navigasi</h2>
-        <ul>
-            <li><a href="groups.php">Manajemen Kelompok</a></li>
-            <li><a href="students.php">Kelola Daftar Pelajar</a></li>
-            <li><a href="ustadz.php">Kelola Daftar Ustadz</a></li>
-        </ul>
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-user-graduate text-xl"></i>
+        </div>
+        <h3 class="text-slate-500 font-medium">Total Pelajar</h3>
+        <p class="text-3xl font-bold text-slate-800">
+            <?php 
+                $res = $conn->query("SELECT COUNT(*) as c FROM students");
+                echo $res ? $res->fetch_assoc()['c'] : '0';
+            ?>
+        </p>
     </div>
     
-    <div class="card">
-        <h2>Status Integrasi Google</h2>
-        <?php if (isset($_SESSION['access_token'])): ?>
-            <p style="color: green;">✅ Terhubung dengan Google Account</p>
-            <p>Anda sudah bisa melakukan sinkronisasi data ke Google Sheets dan Calendar.</p>
-            <a href="sync.php" class="btn btn-success">Jalankan Sinkronisasi</a>
-            <a href="logout.php" class="btn" style="background: #dc3545;">Logout Google</a>
-        <?php else: ?>
-            <p>Belum terhubung dengan Google. Silakan login untuk menghubungkan akun Google Anda.</p>
-            <a href="auth.php" class="btn">Login dengan Google</a>
-        <?php endif; ?>
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-chalkboard-teacher text-xl"></i>
+        </div>
+        <h3 class="text-slate-500 font-medium">Total Ustadz</h3>
+        <p class="text-3xl font-bold text-slate-800">
+            <?php 
+                $res = $conn->query("SELECT COUNT(*) as c FROM ustadz");
+                echo $res ? $res->fetch_assoc()['c'] : '0';
+            ?>
+        </p>
     </div>
-    
-    <div class="card">
-        <h2>Cara Penggunaan di CPanel</h2>
-        <ol>
-            <li>Import file <code>database.sql</code> ke dalam phpMyAdmin di CPanel.</li>
-            <li>Ubah <code>$db_user</code>, <code>$db_pass</code>, dan <code>$db_name</code> di file <code>config.php</code>.</li>
-            <li>Ubah <code>$google_client_id</code> dan <code>$google_client_secret</code> di <code>config.php</code> dengan kredensial dari Google Cloud Console.</li>
-            <li>Pastikan <code>google_redirect_uri</code> diubah ke URL domain Anda.</li>
-            <li>Jalankan perintah <code>composer install</code> di terminal CPanel untuk mengunduh library Google.</li>
-        </ol>
-    </div>
-</body>
-</html>
+</div>
+
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-6">
+    <h2 class="text-lg font-bold mb-4">Status Integrasi Google</h2>
+    <?php if (isset($_SESSION['access_token'])): ?>
+        <div class="p-4 bg-emerald-50 text-emerald-800 rounded-lg flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-check-circle text-xl"></i>
+                <div>
+                    <p class="font-bold">Terhubung dengan Google Account</p>
+                    <p class="text-sm">Anda sudah bisa melakukan sinkronisasi data ke Google Sheets dan Calendar.</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a href="sync.php" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">Jalankan Sinkronisasi</a>
+                <a href="logout.php" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-sm font-medium">Logout</a>
+            </div>
+        </div>
+    <?php else: ?>
+        <div class="p-4 bg-slate-50 text-slate-700 rounded-lg flex items-center justify-between border border-slate-200">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-exclamation-circle text-xl text-slate-400"></i>
+                <div>
+                    <p class="font-bold">Belum Terhubung</p>
+                    <p class="text-sm">Silakan login untuk menghubungkan akun Google Anda.</p>
+                </div>
+            </div>
+            <a href="auth.php" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm font-medium shadow-sm flex items-center gap-2">
+                <i class="fab fa-google text-red-500"></i> Login Google
+            </a>
+        </div>
+    <?php endif; ?>
+</div>
+
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+    <h2 class="text-lg font-bold mb-4">Cara Penggunaan di CPanel</h2>
+    <ol class="list-decimal list-inside space-y-2 text-slate-600">
+        <li>Import file <code class="bg-slate-100 px-1 rounded text-pink-600">database.sql</code> ke dalam phpMyAdmin di CPanel.</li>
+        <li>Ubah <code class="bg-slate-100 px-1 rounded">config.php</code> dengan detail kredensial database dan Google OAuth Anda.</li>
+        <li>Jalankan aplikasi ini. Template ini sudah mensimulasikan fungsionalitas React SPA di versi PHP.</li>
+    </ol>
+</div>
+
+<?php require_once 'footer.php'; ?>
