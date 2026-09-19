@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Group, User, Student, Ustadz } from '../types';
 import { Plus, X, UserPlus, Trash2 } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 export default function GroupsPanel({ 
   groups, 
@@ -25,6 +26,27 @@ export default function GroupsPanel({
   
   const [studentSelect, setStudentSelect] = useState('');
   const [editStudentSelect, setEditStudentSelect] = useState('');
+
+  // Confirm Modal state
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel: string;
+    cancelLabel?: string;
+    variant: 'danger' | 'warning' | 'primary' | 'success';
+    onConfirm: () => Promise<void> | void;
+    isLoading?: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Ya, Hapus',
+    cancelLabel: 'Batal',
+    variant: 'danger',
+    onConfirm: () => {},
+    isLoading: false,
+  });
 
   // Filter groups based on role
   const displayedGroups = user.role === 'Super Administrator' ? groups : groups.filter(g => g.ustadz === user.ustadzName);
@@ -82,10 +104,27 @@ export default function GroupsPanel({
     setEditingGroupId(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Yakin ingin menghapus kelompok ini?')) return;
-    await fetch(`/api/groups/${id}`, { method: 'DELETE' });
-    refresh();
+  const promptDelete = (group: Group) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Konfirmasi Hapus Kelompok',
+      message: `Apakah Anda yakin ingin menghapus kelompok Ustadz "${group.ustadz}"? Data kelompok akan dihapus permanen.`,
+      confirmLabel: 'Ya, Hapus Kelompok',
+      cancelLabel: 'Batal',
+      variant: 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => ({ ...prev, isLoading: true }));
+        try {
+          await fetch(`/api/groups/${group.id}`, { method: 'DELETE' });
+          refresh();
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setConfirmState(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      }
+    });
   };
 
   return (
@@ -292,7 +331,13 @@ export default function GroupsPanel({
                   <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-end text-xs gap-3">
                     <button onClick={() => startEdit(group)} className="text-emerald-600 font-bold hover:underline">Edit Kelompok</button>
                     {user.role === 'Super Administrator' && (
-                      <button onClick={() => handleDelete(group.id)} className="text-red-500 font-bold hover:underline">Hapus</button>
+                      <button 
+                        id={`btn-delete-group-${group.id}`}
+                        onClick={() => promptDelete(group)} 
+                        className="text-red-500 font-bold hover:underline"
+                      >
+                        Hapus
+                      </button>
                     )}
                   </div>
                 </>
@@ -301,6 +346,22 @@ export default function GroupsPanel({
           );
         })}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmLabel={confirmState.confirmLabel}
+        cancelLabel={confirmState.cancelLabel}
+        variant={confirmState.variant}
+        isLoading={confirmState.isLoading}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => {
+          if (!confirmState.isLoading) {
+            setConfirmState(prev => ({ ...prev, isOpen: false }));
+          }
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Sistem Manajemen Halaqoh",
+  "description": "Aplikasi manajemen halaqoh, santri, ustadz, dan pembinaan kontakan",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

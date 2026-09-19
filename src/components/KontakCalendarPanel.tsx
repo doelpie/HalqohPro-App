@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { Group, Schedule, User } from '../types';
+import { Kontakan, KontakSchedule, User } from '../types';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 const DAYS = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-export default function CalendarPanel({ groups, schedules, refresh, user }: { groups: Group[], schedules: Schedule[], refresh: () => void, user: User }) {
+export default function KontakCalendarPanel({ kontakan, kontakSchedules, refresh, user }: { kontakan: Kontakan[], kontakSchedules: KontakSchedule[], refresh: () => void, user: User }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
-  const [groupId, setGroupId] = useState('');
+  const [kontakanId, setKontakanId] = useState('');
   const [time, setTime] = useState('16:00');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const displayedGroups = user.role === 'Super Administrator' ? groups : groups.filter(g => g.ustadz === user.ustadzName);
+  const displayedKontakans = user.role === 'Super Administrator' ? kontakan : kontakan.filter(g => g.createdBy === user.ustadzName);
   
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -31,14 +31,14 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const getSchedulesForDate = (dateStr: string) => {
-    return schedules.filter(s => s.date === dateStr && (user.role === 'Super Administrator' || groups.find(g => g.id === s.groupId)?.ustadz === user.ustadzName));
+  const getKontakSchedulesForDate = (dateStr: string) => {
+    return kontakSchedules.filter(s => s.date === dateStr && (user.role === 'Super Administrator' || kontakan.find(g => g.id === s.kontakanId)?.createdBy === user.ustadzName));
   };
 
   const openAddModal = (d: number) => {
     const dStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
     setSelectedDate(dStr);
-    setGroupId('');
+    setKontakanId('');
     setTime('16:00');
     setTitle('');
     setDescription('');
@@ -46,9 +46,9 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
     setIsModalOpen(true);
   };
 
-  const openEditModal = (s: Schedule) => {
+  const openEditModal = (s: KontakSchedule) => {
     setSelectedDate(s.date);
-    setGroupId(s.groupId);
+    setKontakanId(s.kontakanId);
     setTime(s.time);
     setTitle(s.title);
     setDescription(s.description);
@@ -56,18 +56,18 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
     setIsModalOpen(true);
   };
 
-  const saveSchedule = async (e: React.FormEvent) => {
+  const saveKontakSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!groupId || !selectedDate || !title) return alert('Mohon lengkapi form');
+    if (!kontakanId || !selectedDate || !title) return alert('Mohon lengkapi form');
     
-    const url = editingId ? `/api/schedules/${editingId}` : '/api/schedules';
+    const url = editingId ? `/api/kontakSchedules/${editingId}` : '/api/kontakSchedules';
     const method = editingId ? 'PUT' : 'POST';
 
     await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        groupId,
+        kontakanId,
         date: selectedDate,
         time,
         title,
@@ -80,24 +80,24 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
   };
 
   
-  const getUpcomingSchedules = () => {
+  const getUpcomingKontakSchedules = () => {
     const today = new Date();
     today.setHours(0,0,0,0);
-    const future = schedules.filter(s => {
+    const future = kontakSchedules.filter(s => {
       const sDate = new Date(s.date);
-      return sDate >= today && (user.role === 'Super Administrator' || groups.find(g => g.id === s.groupId)?.ustadz === user.ustadzName);
+      return sDate >= today && (user.role === 'Super Administrator' || kontakan.find(g => g.id === s.kontakanId)?.createdBy === user.ustadzName);
     });
     return future.sort((a,b) => {
       if (a.date === b.date) return a.time.localeCompare(b.time);
       return a.date.localeCompare(b.date);
     }).slice(0, 5);
   };
-  const upcoming = getUpcomingSchedules();
+  const upcoming = getUpcomingKontakSchedules();
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900">Kalender Kajian</h2>
+        <h2 className="text-2xl font-bold text-slate-900">Kalender Plan Kontak</h2>
         <div className="flex items-center gap-4">
           <button onClick={prevMonth} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 transition"><ChevronLeft className="w-5 h-5 text-slate-600" /></button>
           <span className="font-bold text-slate-800 text-lg w-40 text-center">{MONTHS[month]} {year}</span>
@@ -119,7 +119,7 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
               ))}
               {days.map(d => {
                 const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-                const daySchedules = getSchedulesForDate(dateStr);
+                const dayKontakSchedules = getKontakSchedulesForDate(dateStr);
                 const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
 
                 return (
@@ -131,11 +131,11 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
                       </button>
                     </div>
                     <div className="space-y-1 mt-2">
-                      {daySchedules.map(s => {
-                        const group = groups.find(g => g.id === s.groupId);
+                      {dayKontakSchedules.map(s => {
+                        const group = kontakan.find(g => g.id === s.kontakanId);
                         return (
                           <div key={s.id} onClick={() => openEditModal(s)} className="text-[9px] sm:text-[10px] p-1 sm:p-1.5 bg-emerald-100 text-emerald-800 rounded cursor-pointer hover:bg-emerald-200 transition border border-emerald-200 truncate" title={`${s.time} - ${s.title}`}>
-                            <span className="font-bold">{s.time}</span> Ust {group?.ustadz}: {s.title}
+                            <span className="font-bold">{s.time}</span> {group?.name}: {s.title}
                           </div>
                         );
                       })}
@@ -149,16 +149,16 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
         </div>
 
         <div className="mt-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-4">5 Kajian Mendatang</h3>
+          <h3 className="font-bold text-slate-800 mb-4">5 Plan Kontak Mendatang</h3>
           {upcoming.length > 0 ? (
             <div className="space-y-3">
               {upcoming.map(s => {
-                const group = groups.find(g => g.id === s.groupId);
+                const group = kontakan.find(g => g.id === s.kontakanId);
                 return (
                   <div key={s.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                     <div>
                       <div className="font-bold text-slate-800 text-sm">{s.title}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">Ust {group?.ustadz} • {s.description || '-'}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{group?.name} • {s.description || '-'}</div>
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-emerald-700 text-sm">{new Date(s.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
@@ -169,7 +169,7 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
               })}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">Tidak ada jadwal kajian mendatang.</p>
+            <p className="text-sm text-slate-500">Tidak ada plan kontak mendatang.</p>
           )}
         </div>
 
@@ -179,7 +179,7 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
             <div className="p-6 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-800">{editingId ? 'Edit Jadwal' : 'Tambah Jadwal'}</h3>
             </div>
-            <form onSubmit={saveSchedule} className="p-6 space-y-4">
+            <form onSubmit={saveKontakSchedule} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Tanggal</label>
                 <input type="date" required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
@@ -190,17 +190,17 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
                   <input type="time" required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" value={time} onChange={e => setTime(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Kelompok</label>
-                  <select required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" value={groupId} onChange={e => setGroupId(e.target.value)}>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Kontakan</label>
+                  <select required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" value={kontakanId} onChange={e => setKontakanId(e.target.value)}>
                     <option value="">Pilih</option>
-                    {displayedGroups.map(g => (
-                      <option key={g.id} value={g.id}>Ustadz {g.ustadz}</option>
+                    {displayedKontakans.map(g => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Judul Kajian</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Judul Plan Kontak</label>
                 <input type="text" required placeholder="e.g. Pembahasan Kitab..." className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" value={title} onChange={e => setTitle(e.target.value)} />
               </div>
               <div>

@@ -6,6 +6,14 @@ export default function Login({ onLogin }: { onLogin: (user: User) => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -47,6 +55,7 @@ export default function Login({ onLogin }: { onLogin: (user: User) => void }) {
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
               value={username}
               onChange={e => setUsername(e.target.value)}
+              onKeyDown={handleKeyDown}
               required
             />
           </div>
@@ -57,6 +66,7 @@ export default function Login({ onLogin }: { onLogin: (user: User) => void }) {
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-sm"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
               required
             />
           </div>

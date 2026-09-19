@@ -120,6 +120,20 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+app.post('/api/change-password', (req, res) => {
+  const { userId, currentPassword, newPassword } = req.body;
+  const data = readDB();
+  const userIndex = data.users.findIndex((u: any) => u.id === userId && u.password === currentPassword);
+  
+  if (userIndex !== -1) {
+    data.users[userIndex].password = newPassword;
+    writeDB(data);
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ success: false, error: 'Password saat ini salah.' });
+  }
+});
+
 app.get('/api/data', (req, res) => {
   const data = readDB();
   res.json({ 
@@ -128,7 +142,10 @@ app.get('/api/data', (req, res) => {
     progress: data.progress, 
     schedules: data.schedules || [],
     students: data.students || [],
-    ustadz: data.ustadz || []
+    ustadz: data.ustadz || [],
+    kontakan: data.kontakan || [],
+    kontakSchedules: data.kontakSchedules || [],
+    kontakProgress: data.kontakProgress || []
   });
 });
 
@@ -274,24 +291,58 @@ app.delete('/api/groups/:id', (req, res) => {
 
 // --- Google OAuth Integration ---
 // Fallback if environment variables are missing
-const OAUTH_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'MISSING_CLIENT_ID';
-const OAUTH_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'MISSING_CLIENT_SECRET';
+const getOAuthSettings = () => {
+  const data = readDB();
+  return data.oauthSettings || {};
+};
 
-const getOAuthClient = (req: express.Request) => {
+const getOAuthClient = (req) => {
+  const settings = getOAuthSettings();
+  const clientId = settings.clientId || process.env.GOOGLE_CLIENT_ID || 'MISSING_CLIENT_ID';
+  const clientSecret = settings.clientSecret || process.env.GOOGLE_CLIENT_SECRET || 'MISSING_CLIENT_SECRET';
+
   const protocol = req.headers['x-forwarded-proto'] || req.protocol;
   const host = req.headers['x-forwarded-host'] || req.get('host');
-  const redirectUri = `${protocol}://${host}/api/auth/callback`;
+  // Allow overriding redirect URI for subfolder hosting
+  const redirectUri = settings.redirectUri || `${protocol}://${host}/api/auth/callback`;
+
   return new google.auth.OAuth2(
-    OAUTH_CLIENT_ID,
-    OAUTH_CLIENT_SECRET,
+    clientId,
+    clientSecret,
     redirectUri
   );
 };
 
+app.get('/api/settings/oauth', (req, res) => {
+  const settings = getOAuthSettings();
+  res.json({
+    clientId: settings.clientId || '',
+    clientSecret: settings.clientSecret ? '********' : '', // mask secret
+    redirectUri: settings.redirectUri || ''
+  });
+});
+
+app.post('/api/settings/oauth', (req, res) => {
+  const data = readDB();
+  if (!data.oauthSettings) data.oauthSettings = {};
+  
+  const { clientId, clientSecret, redirectUri } = req.body;
+  if (clientId !== undefined) data.oauthSettings.clientId = clientId;
+  if (clientSecret && clientSecret !== '********') data.oauthSettings.clientSecret = clientSecret;
+  if (redirectUri !== undefined) data.oauthSettings.redirectUri = redirectUri;
+  
+  writeDB(data);
+  res.json({ success: true });
+});
+
 app.get('/api/auth/url', (req, res) => {
-  if (OAUTH_CLIENT_ID === 'MISSING_CLIENT_ID') {
-     return res.status(500).json({ error: 'Missing GOOGLE_CLIENT_ID environment variable' });
+  const settings = getOAuthSettings();
+  const clientId = settings.clientId || process.env.GOOGLE_CLIENT_ID || 'MISSING_CLIENT_ID';
+  
+  if (clientId === 'MISSING_CLIENT_ID') {
+     return res.status(500).json({ error: 'Missing GOOGLE_CLIENT_ID' });
   }
+
   const oauth2Client = getOAuthClient(req);
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -340,6 +391,109 @@ app.get('/api/auth/status', (req, res) => {
 });
 
 // Sync to Google Sheets
+
+// --- Kontakan ---
+app.post('/api/kontakan', (req, res) => {
+  const data = readDB();
+  if (!data.kontakan) data.kontakan = [];
+  const record = { id: uuidv4(), ...req.body };
+  data.kontakan.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
+app.put('/api/kontakan/:id', (req, res) => {
+  const data = readDB();
+  if (!data.kontakan) data.kontakan = [];
+  const index = data.kontakan.findIndex((s) => s.id === req.params.id);
+  if (index !== -1) {
+    data.kontakan[index] = { ...data.kontakan[index], ...req.body };
+    writeDB(data);
+    res.json(data.kontakan[index]);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+app.post('/api/kontakan/:id/move-to-pelajar', (req, res) => {
+  const data = readDB();
+  if (!data.kontakan) data.kontakan = [];
+  if (!data.students) data.students = [];
+  
+  const index = data.kontakan.findIndex((s) => s.id === req.params.id);
+  if (index !== -1) {
+    // Change status
+    data.kontakan[index].status = 'Pelajar';
+    
+    // Add to students
+    const k = data.kontakan[index];
+    const newStudent = {
+      id: uuidv4(),
+      name: k.name,
+      origin: k.origin,
+      address: k.address,
+      phone: k.phone,
+      createdBy: k.createdBy
+    };
+    data.students.push(newStudent);
+    
+    writeDB(data);
+    res.json({ success: true, student: newStudent, kontakan: data.kontakan[index] });
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+// --- Kontak Schedules ---
+
+app.delete('/api/kontakan/:id', (req, res) => {
+  const data = readDB();
+  if (!data.kontakan) data.kontakan = [];
+  data.kontakan = data.kontakan.filter((s) => s.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+app.post('/api/kontakSchedules', (req, res) => {
+  const data = readDB();
+  if (!data.kontakSchedules) data.kontakSchedules = [];
+  const record = { id: uuidv4(), ...req.body };
+  data.kontakSchedules.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
+app.put('/api/kontakSchedules/:id', (req, res) => {
+  const data = readDB();
+  if (!data.kontakSchedules) data.kontakSchedules = [];
+  const index = data.kontakSchedules.findIndex((s) => s.id === req.params.id);
+  if (index !== -1) {
+    data.kontakSchedules[index] = { ...data.kontakSchedules[index], ...req.body };
+    writeDB(data);
+    res.json(data.kontakSchedules[index]);
+  } else {
+    res.status(404).json({ error: 'Not found' });
+  }
+});
+
+app.delete('/api/kontakSchedules/:id', (req, res) => {
+  const data = readDB();
+  if (!data.kontakSchedules) data.kontakSchedules = [];
+  data.kontakSchedules = data.kontakSchedules.filter((s) => s.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+// --- Kontak Progress ---
+app.post('/api/kontakProgress', (req, res) => {
+  const data = readDB();
+  if (!data.kontakProgress) data.kontakProgress = [];
+  const record = { id: uuidv4(), ...req.body };
+  data.kontakProgress.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
 app.post('/api/sync/sheets', async (req, res) => {
   const data = readDB();
   if (!data.tokens.access_token) {

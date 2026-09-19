@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Student, User, Group } from '../types';
-import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 interface StudentsPanelProps {
   students: Student[];
@@ -13,6 +14,28 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
   const [isEditing, setIsEditing] = useState<Student | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [search, setSearch] = useState('');
+  const [formError, setFormError] = useState('');
+
+  // Confirm Modal state
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel: string;
+    cancelLabel?: string;
+    variant: 'danger' | 'warning' | 'primary' | 'success';
+    onConfirm: () => Promise<void> | void;
+    isLoading?: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Ya, Hapus Data',
+    cancelLabel: 'Batal',
+    variant: 'danger',
+    onConfirm: () => {},
+    isLoading: false,
+  });
 
   // Form states
   const [name, setName] = useState('');
@@ -35,7 +58,11 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
   const canDelete = () => user.role === 'Super Administrator';
 
   const handleSave = async () => {
-    if (!name.trim()) return alert('Nama pelajar wajib diisi');
+    if (!name.trim()) {
+      setFormError('Nama pelajar wajib diisi.');
+      return;
+    }
+    setFormError('');
 
     const payload = {
       name,
@@ -65,10 +92,27 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
     refresh();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Yakin ingin menghapus pelajar ini?')) return;
-    await fetch(`/api/students/${id}`, { method: 'DELETE' });
-    refresh();
+  const promptDelete = (student: Student) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Konfirmasi Hapus Pelajar',
+      message: `Apakah Anda yakin ingin menghapus data pelajar "${student.name}"? Tindakan ini bersifat permanen dan tidak dapat dibatalkan.`,
+      confirmLabel: 'Ya, Hapus Data',
+      cancelLabel: 'Batal',
+      variant: 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => ({ ...prev, isLoading: true }));
+        try {
+          await fetch(`/api/students/${student.id}`, { method: 'DELETE' });
+          refresh();
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setConfirmState(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        }
+      }
+    });
   };
 
   const resetForm = () => {
@@ -76,6 +120,7 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
     setOrigin('');
     setAddress('');
     setPhone('');
+    setFormError('');
   };
 
   const startEdit = (student: Student) => {
@@ -83,6 +128,7 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
     setOrigin(student.origin || '');
     setAddress(student.address || '');
     setPhone(student.phone || '');
+    setFormError('');
     setIsEditing(student);
     setIsAdding(true);
   };
@@ -112,6 +158,14 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
       {isAdding && (
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
           <h3 className="font-bold text-lg text-slate-800">{isEditing ? 'Edit Pelajar' : 'Tambah Pelajar Baru'}</h3>
+
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Nama Pelajar</label>
@@ -221,7 +275,8 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
                         )}
                         {canDelete() && (
                           <button
-                            onClick={() => handleDelete(student.id)}
+                            id={`btn-delete-student-${student.id}`}
+                            onClick={() => promptDelete(student)}
                             className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Hapus"
                           >
@@ -243,6 +298,22 @@ export default function StudentsPanel({ students, groups, user, refresh }: Stude
           </table>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmLabel={confirmState.confirmLabel}
+        cancelLabel={confirmState.cancelLabel}
+        variant={confirmState.variant}
+        isLoading={confirmState.isLoading}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => {
+          if (!confirmState.isLoading) {
+            setConfirmState(prev => ({ ...prev, isOpen: false }));
+          }
+        }}
+      />
     </div>
   );
 }
