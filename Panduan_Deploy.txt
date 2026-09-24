@@ -1,0 +1,109 @@
+================================================================================
+          PANDUAN RINGKAS DEPLOYMENT HALAQOHAPP KE CPANEL HOSTING
+                   URL: https://halqohapp.inysign.net/halqohapp/
+================================================================================
+
+Dokumen ini menjelaskan file apa saja yang harus diunggah dan langkah spesifik
+untuk mempublikasikan versi terbaru HalaqohApp ke cPanel hosting agar seluruh
+fitur (termasuk integrasi Google Sheets, Drive, dan Calendar) berfungsi normal.
+
+--------------------------------------------------------------------------------
+1. DAFTAR FILE & FOLDER YANG HARUS DIUNGGAH
+--------------------------------------------------------------------------------
+Setelah Anda menjalankan perintah "npm run build", sistem menghasilkan file
+produksi yang siap dijalankan di hosting:
+
+[WAJIB DIUNGGAH]:
+  ├── dist/                      <-- (Folder utama hasil build)
+  │    ├── index.html            <-- Frontend SPA terkompilasi
+  │    ├── assets/               <-- Bundle CSS, JS & Ikon teroptimasi
+  │    └── server.cjs            <-- Backend Express Node.js terbundel
+  ├── package.json               <-- Informasi dependensi aplikasi
+  ├── privacy-policy.html        <-- Halaman statis Kebijakan Privasi (Google OAuth)
+  └── terms-of-service.html      <-- Halaman statis Syarat & Ketentuan (Google OAuth)
+
+[OPSIONAL / DATA]:
+  ├── uploads/                   <-- Folder logo kustom (jangan dihapus di hosting)
+  └── database.json              <-- PERHATIAN:
+                                     Jika di hosting SUDAH ADA data pelajar, ustadz,
+                                     atau absensi yang berjalan, JANGAN MENIMPA
+                                     database.json dari lokal!
+                                     Gunakan menu "Pencadangan Database" di aplikasi
+                                     untuk backup/restore data dengan aman.
+
+--------------------------------------------------------------------------------
+2. LANGKAH DEPLOYMENT DI CPANEL (SETUP NODE.JS APP)
+--------------------------------------------------------------------------------
+HalaqohApp menggunakan backend Express (Node.js) untuk melayani API, penyimpanan
+database JSON, dan integrasi Google Workspace.
+
+Langkah-langkah di cPanel:
+1. Buka cPanel hosting Anda.
+2. Cari dan klik menu "Setup Node.js App".
+3. Pastikan konfigurasi aplikasi Anda sesuai:
+   - Node.js Version       : 18.x atau 20.x (disarankan LTS)
+   - Application Mode      : Production
+   - Application Root      : direktori folder aplikasi (misal: public_html/halqohapp)
+   - Application URL       : halqohapp (atau domain halqohapp.inysign.net)
+   - Application startup file : dist/server.cjs
+4. Buka "File Manager" cPanel, masuk ke folder aplikasi Anda:
+   - Unggah folder "dist", file "package.json", "privacy-policy.html", dan "terms-of-service.html".
+   - (Tips: Anda dapat mengompres file-file tersebut menjadi satu berkas .zip, 
+     unggah ke File Manager, lalu klik kanan > "Extract").
+5. Kembali ke menu "Setup Node.js App":
+   - Klik tombol "Run NPM Install" jika diperlukan.
+   - Klik tombol "RESTART" pada aplikasi Node.js Anda.
+6. Buka browser dan lakukan Hard Refresh (Ctrl + F5 atau Ctrl + Shift + R)
+   pada URL https://halqohapp.inysign.net/halqohapp/.
+
+--------------------------------------------------------------------------------
+3. PENGATURAN AGAR INTEGRASI GOOGLE API TETAP BERFUNGSI
+--------------------------------------------------------------------------------
+Agar integrasi Google (Google Sheets, Drive Backup, Calendar) tidak mengalami
+error "redirect_uri_mismatch" atau "403 access_denied", ikuti langkah berikut:
+
+A. Pengaturan di Google Cloud Console (https://console.cloud.google.com/):
+   1. Buka menu "APIs & Services" > "Credentials".
+   2. Pilih OAuth 2.0 Client ID yang digunakan aplikasi ini.
+   3. Pada bagian "Authorized JavaScript origins", pastikan domain terdaftar:
+      - https://halqohapp.inysign.net
+   4. Pada bagian "Authorized redirect URIs", tambahkan URL callback hosting Anda:
+      - https://halqohapp.inysign.net/halqohapp/api/auth/callback
+      - https://halqohapp.inysign.net/api/auth/callback
+   5. Pastikan API berikut sudah aktif di menu "Enabled APIs & Services":
+      - Google Sheets API
+      - Google Drive API
+      - Google Calendar API
+   6. Klik tombol "SAVE".
+
+B. Pengaturan di Dalam Aplikasi HalaqohApp:
+   1. Buka aplikasi Anda di browser: https://halqohapp.inysign.net/halqohapp/
+   2. Masuk sebagai Administrator.
+   3. Buka menu "Integrasi Google" (Sync Google).
+   4. Klik tombol ikon Gear / Pengaturan (Kanan atas kartu Integrasi).
+   5. Masukkan:
+      - Client ID     : [Isi dengan Google Client ID Anda]
+      - Client Secret : [Isi dengan Google Client Secret Anda]
+      - Redirect URI  : https://halqohapp.inysign.net/halqohapp/api/auth/callback
+   6. Klik "Simpan Pengaturan OAuth".
+   7. Klik tombol "Hubungkan Akun Google" dan izinkan hak akses pada jendela popup.
+
+C. (Alternatif) Pengaturan via Environment Variable cPanel:
+   Di menu "Setup Node.js App", Anda juga dapat memasukkan variabel lingkungan:
+   - GOOGLE_CLIENT_ID = [Client ID Anda]
+   - GOOGLE_CLIENT_SECRET = [Client Secret Anda]
+   - GOOGLE_SPREADSHEET_ID = [ID Spreadsheet Google Sheets]
+   - NODE_ENV = production
+
+--------------------------------------------------------------------------------
+4. CHECKLIST VERIFIKASI AKHIR
+--------------------------------------------------------------------------------
+[ ] Akses web https://halqohapp.inysign.net/halqohapp/ menampilkan judul "HalaqohApp"
+[ ] Halaman Kebijakan Privasi aktif di:
+    https://halqohapp.inysign.net/halqohapp/privacy-policy.html
+[ ] Halaman Syarat & Ketentuan aktif di:
+    https://halqohapp.inysign.net/halqohapp/terms-of-service.html
+[ ] Login admin berhasil
+[ ] Tes tombol "Cadangkan Database (JSON)" di menu Pengaturan
+[ ] Tes koneksi Google OAuth di menu Integrasi Google
+================================================================================

@@ -6,10 +6,34 @@ import fs from 'fs';
 
 const app = express();
 const PORT = 3000;
-app.use(express.json());
+
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+app.use('/uploads', express.static(UPLOAD_DIR));
+
+// Legal static pages for Privacy Policy and Terms of Service
+app.get(['/privacy-policy', '/privacy-policy.html'], (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'privacy-policy.html'));
+});
+app.get(['/terms-of-service', '/terms-of-service.html'], (req, res) => {
+  res.sendFile(path.join(process.cwd(), 'terms-of-service.html'));
+});
 
 // --- Database Simulation ---
 const DB_FILE = path.join(process.cwd(), 'database.json');
+
+const defaultAppConfig = {
+  title: 'HalaqohApp',
+  subtitle: 'Dakwah Management System',
+  logoUrl: '',
+  faviconUrl: '',
+  footerText: 'Sistem Manajemen Halaqoh v2.4.0'
+};
 
 const defaultData = {
   groups: [
@@ -40,13 +64,19 @@ const defaultData = {
   schedules: [], // { id, groupId, date, time, title, description }
   students: [], // { id, name, origin, address, phone, createdBy, groupId }
   ustadz: [], // { id, name, origin, address, phone }
+  kontakan: [],
+  kontakSchedules: [],
+  kontakProgress: [],
+  agendaEvents: [],
+  agendaProgress: [],
   tokens: {}, // Google OAuth tokens
   users: [
     { id: 'u1', username: 'Admin Teguh', password: '@Teguh9495', role: 'Super Administrator', ustadzName: 'Teguh' },
     { id: 'u2', username: 'Ustadz Margo', password: '@000MuslimBali', role: 'Super Administrator', ustadzName: 'Margo' },
     { id: 'u3', username: 'Ustadz Adi', password: '@000MuslimBali', role: 'Ustadz', ustadzName: 'Adi' },
     { id: 'u4', username: 'Ustadz Ahmad Surya', password: '@000MuslimBali', role: 'Ustadz', ustadzName: 'Ahmad Surya' }
-  ]
+  ],
+  activityLogs: []
 };
 
 function readDB() {
@@ -90,6 +120,37 @@ function readDB() {
       modified = true;
     }
 
+    if (!data.appConfig) {
+      data.appConfig = { ...defaultAppConfig };
+      modified = true;
+    }
+
+    if (!data.agendaEvents) {
+      data.agendaEvents = [];
+      modified = true;
+    }
+
+    if (!data.agendaProgress) {
+      data.agendaProgress = [];
+      modified = true;
+    }
+
+    if (!data.activityLogs) {
+      data.activityLogs = [
+        {
+          id: `log_init_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          action: 'CONFIG_UPDATE',
+          category: 'CONFIG',
+          title: 'Inisialisasi Sistem HalaqohPro',
+          description: 'Sistem audit trail dan log aktivitas aplikasi berhasil diaktifkan.',
+          actor: 'System',
+          details: { version: '2.4.0' }
+        }
+      ];
+      modified = true;
+    }
+
     if (modified) {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
     }
@@ -102,6 +163,39 @@ function readDB() {
 
 function writeDB(data: any) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+}
+
+function logActivity(
+  action: string,
+  category: string,
+  title: string,
+  description: string,
+  actor: string = 'Super Administrator',
+  details: any = null
+) {
+  try {
+    const data = readDB();
+    if (!data.activityLogs) data.activityLogs = [];
+    const logEntry = {
+      id: 'log_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8),
+      timestamp: new Date().toISOString(),
+      action,
+      category,
+      title,
+      description,
+      actor: actor || 'Super Administrator',
+      details: details || {}
+    };
+    data.activityLogs.unshift(logEntry);
+    if (data.activityLogs.length > 300) {
+      data.activityLogs = data.activityLogs.slice(0, 300);
+    }
+    writeDB(data);
+    return logEntry;
+  } catch (err) {
+    console.error('Failed to write activity log:', err);
+    return null;
+  }
 }
 
 // Ensure DB exists
@@ -126,8 +220,17 @@ app.post('/api/change-password', (req, res) => {
   const userIndex = data.users.findIndex((u: any) => u.id === userId && u.password === currentPassword);
   
   if (userIndex !== -1) {
-    data.users[userIndex].password = newPassword;
+    const user = data.users[userIndex];
+    user.password = newPassword;
     writeDB(data);
+    logActivity(
+      'PASSWORD_CHANGE',
+      'SECURITY',
+      'Perubahan Kata Sandi Akun',
+      `Pengguna "${user.username}" (${user.role}) berhasil memperbarui kata sandi akun`,
+      user.username,
+      { userId: user.id, username: user.username }
+    );
     res.json({ success: true });
   } else {
     res.status(401).json({ success: false, error: 'Password saat ini salah.' });
@@ -145,8 +248,281 @@ app.get('/api/data', (req, res) => {
     ustadz: data.ustadz || [],
     kontakan: data.kontakan || [],
     kontakSchedules: data.kontakSchedules || [],
-    kontakProgress: data.kontakProgress || []
+    kontakProgress: data.kontakProgress || [],
+    agendaEvents: data.agendaEvents || [],
+    agendaProgress: data.agendaProgress || [],
+    appConfig: data.appConfig || defaultAppConfig
   });
+});
+
+app.get('/api/app-config', (req, res) => {
+  const data = readDB();
+  res.json(data.appConfig || defaultAppConfig);
+});
+
+app.post('/api/app-config', (req, res) => {
+  const data = readDB();
+  if (!data.appConfig) data.appConfig = { ...defaultAppConfig };
+
+  const { title, subtitle, logoUrl, faviconUrl, footerText, actor } = req.body;
+  if (title !== undefined) data.appConfig.title = title.trim() || 'HalaqohApp';
+  if (subtitle !== undefined) data.appConfig.subtitle = subtitle.trim();
+  if (logoUrl !== undefined) data.appConfig.logoUrl = logoUrl;
+  if (faviconUrl !== undefined) data.appConfig.faviconUrl = faviconUrl;
+  if (footerText !== undefined) data.appConfig.footerText = footerText;
+
+  writeDB(data);
+
+  logActivity(
+    'CONFIG_UPDATE',
+    'CONFIG',
+    'Pembaruan Konfigurasi Sistem',
+    `Identitas aplikasi berhasil diperbarui: Judul "${data.appConfig.title}", Sub-judul "${data.appConfig.subtitle || '-'}"`,
+    actor || 'Super Administrator',
+    { title: data.appConfig.title, subtitle: data.appConfig.subtitle, footerText: data.appConfig.footerText }
+  );
+
+  res.json({ success: true, appConfig: data.appConfig });
+});
+
+app.post('/api/app-config/upload-logo', (req, res) => {
+  try {
+    const { imageBase64, filename, actor } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'Data gambar tidak ditemukan' });
+    }
+
+    const matches = imageBase64.match(/^data:([A-Za-z0-9-+\/]+);base64,(.+)$/);
+    let buffer: Buffer;
+    let ext = 'png';
+
+    if (matches && matches.length === 3) {
+      const mime = matches[1];
+      if (mime.includes('svg')) ext = 'svg';
+      else if (mime.includes('jpeg') || mime.includes('jpg')) ext = 'jpg';
+      else if (mime.includes('webp')) ext = 'webp';
+      else if (mime.includes('gif')) ext = 'gif';
+      else if (mime.includes('x-icon') || mime.includes('ico')) ext = 'ico';
+      buffer = Buffer.from(matches[2], 'base64');
+    } else {
+      buffer = Buffer.from(imageBase64, 'base64');
+    }
+
+    const safeName = `logo-${Date.now()}.${ext}`;
+    const filePath = path.join(UPLOAD_DIR, safeName);
+    fs.writeFileSync(filePath, buffer);
+
+    const logoUrl = `/uploads/${safeName}`;
+
+    const data = readDB();
+    if (!data.appConfig) data.appConfig = { ...defaultAppConfig };
+    data.appConfig.logoUrl = logoUrl;
+    writeDB(data);
+
+    logActivity(
+      'LOGO_UPLOAD',
+      'CONFIG',
+      'Unggah Logo Kustom',
+      `Logo kustom aplikasi berhasil diperbarui (${filename || safeName})`,
+      actor || 'Super Administrator',
+      { logoUrl, filename: filename || safeName }
+    );
+
+    res.json({ success: true, logoUrl, appConfig: data.appConfig });
+  } catch (err: any) {
+    console.error('Error saving logo upload:', err);
+    res.status(500).json({ error: 'Gagal mengunggah logo: ' + err.message });
+  }
+});
+
+// --- Manual Database Backup Endpoint ---
+app.get('/api/backup', (req, res) => {
+  try {
+    const data = readDB();
+    const timestamp = new Date().toISOString();
+    
+    // Safely exclude sensitive password credentials while keeping user references
+    const safeUsers = (data.users || []).map((u: any) => {
+      const { password, ...safe } = u;
+      return safe;
+    });
+
+    const summary = {
+      totalGroups: data.groups?.length || 0,
+      totalMaterials: data.materials?.length || 0,
+      totalProgress: data.progress?.length || 0,
+      totalSchedules: data.schedules?.length || 0,
+      totalStudents: data.students?.length || 0,
+      totalUstadz: data.ustadz?.length || 0,
+      totalKontakan: data.kontakan?.length || 0,
+      totalKontakSchedules: data.kontakSchedules?.length || 0,
+      totalKontakProgress: data.kontakProgress?.length || 0,
+      totalAgendaEvents: data.agendaEvents?.length || 0,
+      totalAgendaProgress: data.agendaProgress?.length || 0,
+      hasAppConfig: !!data.appConfig
+    };
+
+    const backupPayload = {
+      app: data.appConfig?.title || 'HalaqohApp',
+      version: '2.4.0',
+      type: 'full_database_backup',
+      exportedAt: timestamp,
+      summary,
+      data: {
+        groups: data.groups || [],
+        materials: data.materials || [],
+        progress: data.progress || [],
+        schedules: data.schedules || [],
+        students: data.students || [],
+        ustadz: data.ustadz || [],
+        kontakan: data.kontakan || [],
+        kontakSchedules: data.kontakSchedules || [],
+        kontakProgress: data.kontakProgress || [],
+        agendaEvents: data.agendaEvents || [],
+        agendaProgress: data.agendaProgress || [],
+        appConfig: data.appConfig || defaultAppConfig,
+        users: safeUsers
+      }
+    };
+
+    // If query parameter download=true is passed, trigger direct file download & audit log
+    if (req.query.download === 'true') {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const now = new Date();
+      const filenameDate = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      const filename = `backup_database_halaqohapp_${filenameDate}.json`;
+      const actor = (req.query.actor as string) || 'Super Administrator';
+
+      logActivity(
+        'BACKUP_EXPORT',
+        'BACKUP',
+        'Unduh Cadangan Database JSON',
+        `Pencadangan database lengkap diunduh (${summary.totalStudents} pelajar, ${summary.totalGroups} kelompok, ${summary.totalKontakan} kontakan)`,
+        actor,
+        { filename, summary }
+      );
+
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return res.send(JSON.stringify(backupPayload, null, 2));
+    }
+
+    res.json({ success: true, backup: backupPayload });
+  } catch (err: any) {
+    console.error('Error generating database backup:', err);
+    res.status(500).json({ success: false, error: 'Gagal membuat cadangan database: ' + err.message });
+  }
+});
+
+// --- Activity Log Endpoints ---
+app.get('/api/activity-logs', (req, res) => {
+  try {
+    const data = readDB();
+    const logs = data.activityLogs || [];
+    const { category, search, limit } = req.query;
+
+    let filtered = [...logs];
+    if (category && category !== 'ALL') {
+      filtered = filtered.filter((l: any) => l.category === category);
+    }
+
+    if (search) {
+      const q = String(search).toLowerCase();
+      filtered = filtered.filter((l: any) =>
+        (l.title && l.title.toLowerCase().includes(q)) ||
+        (l.description && l.description.toLowerCase().includes(q)) ||
+        (l.actor && l.actor.toLowerCase().includes(q)) ||
+        (l.action && l.action.toLowerCase().includes(q))
+      );
+    }
+
+    const max = limit ? parseInt(String(limit), 10) : 150;
+    res.json({
+      success: true,
+      logs: filtered.slice(0, max),
+      total: logs.length,
+      filteredTotal: filtered.length
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/activity-logs', (req, res) => {
+  try {
+    const { action, category, title, description, actor, details } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: 'Judul aktivitas (title) wajib diisi' });
+    }
+    const entry = logActivity(
+      action || 'CUSTOM',
+      category || 'SYSTEM',
+      title,
+      description || '',
+      actor || 'Super Administrator',
+      details
+    );
+    res.json({ success: true, log: entry });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/activity-logs', (req, res) => {
+  try {
+    const data = readDB();
+    const count = data.activityLogs?.length || 0;
+    const actor = req.body?.actor || 'Super Administrator';
+    data.activityLogs = [];
+    writeDB(data);
+
+    logActivity(
+      'SYSTEM_RESET',
+      'SECURITY',
+      'Pembersihan Riwayat Audit Log',
+      `Seluruh riwayat catatan aktivitas (${count} entri) telah dibersihkan oleh ${actor}`,
+      actor
+    );
+
+    res.json({ success: true, message: 'Log aktivitas berhasil dibersihkan' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/activity-logs/export', (req, res) => {
+  try {
+    const data = readDB();
+    const logs = data.activityLogs || [];
+    const format = req.query.format === 'csv' ? 'csv' : 'json';
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+
+    if (format === 'csv') {
+      const headers = ['ID', 'Waktu (ISO)', 'Kategori', 'Tindakan', 'Judul', 'Deskripsi', 'Pelaku'];
+      const rows = logs.map((l: any) => [
+        `"${l.id || ''}"`,
+        `"${l.timestamp || ''}"`,
+        `"${l.category || ''}"`,
+        `"${l.action || ''}"`,
+        `"${(l.title || '').replace(/"/g, '""')}"`,
+        `"${(l.description || '').replace(/"/g, '""')}"`,
+        `"${(l.actor || '').replace(/"/g, '""')}"`
+      ]);
+      const csvContent = [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
+
+      res.setHeader('Content-Disposition', `attachment; filename="audit_activity_logs_${dateStr}.csv"`);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      return res.send(csvContent);
+    } else {
+      res.setHeader('Content-Disposition', `attachment; filename="audit_activity_logs_${dateStr}.json"`);
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return res.send(JSON.stringify({ exportedAt: now.toISOString(), total: logs.length, logs }, null, 2));
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/groups', (req, res) => {
@@ -494,6 +870,130 @@ app.post('/api/kontakProgress', (req, res) => {
   res.json(record);
 });
 
+app.delete('/api/kontakProgress/:id', (req, res) => {
+  const data = readDB();
+  if (!data.kontakProgress) data.kontakProgress = [];
+  data.kontakProgress = data.kontakProgress.filter((p: any) => p.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+app.delete('/api/progress/:id', (req, res) => {
+  const data = readDB();
+  if (!data.progress) data.progress = [];
+  data.progress = data.progress.filter((p: any) => p.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+// --- Agenda Events (Kalender Agenda Kegiatan & Rapat/Liqo') ---
+app.post('/api/agendaEvents', (req, res) => {
+  const data = readDB();
+  if (!data.agendaEvents) data.agendaEvents = [];
+  const record = { id: uuidv4(), createdAt: new Date().toISOString(), ...req.body };
+  data.agendaEvents.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
+app.put('/api/agendaEvents/:id', (req, res) => {
+  const data = readDB();
+  if (!data.agendaEvents) data.agendaEvents = [];
+  const index = data.agendaEvents.findIndex((e: any) => e.id === req.params.id);
+  if (index !== -1) {
+    data.agendaEvents[index] = { ...data.agendaEvents[index], ...req.body };
+    writeDB(data);
+    res.json(data.agendaEvents[index]);
+  } else {
+    res.status(404).json({ error: 'Agenda Event not found' });
+  }
+});
+
+app.delete('/api/agendaEvents/:id', (req, res) => {
+  const data = readDB();
+  if (!data.agendaEvents) data.agendaEvents = [];
+  data.agendaEvents = data.agendaEvents.filter((e: any) => e.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+// --- Agenda Progress (Progres Realisasi Agenda & Liqo') ---
+app.post('/api/agendaProgress', (req, res) => {
+  const data = readDB();
+  if (!data.agendaProgress) data.agendaProgress = [];
+  const record = { id: uuidv4(), createdAt: new Date().toISOString(), ...req.body };
+  data.agendaProgress.push(record);
+  writeDB(data);
+  res.json(record);
+});
+
+app.put('/api/agendaProgress/:id', (req, res) => {
+  const data = readDB();
+  if (!data.agendaProgress) data.agendaProgress = [];
+  const index = data.agendaProgress.findIndex((p: any) => p.id === req.params.id);
+  if (index !== -1) {
+    data.agendaProgress[index] = { ...data.agendaProgress[index], ...req.body };
+    writeDB(data);
+    res.json(data.agendaProgress[index]);
+  } else {
+    res.status(404).json({ error: 'Agenda Progress not found' });
+  }
+});
+
+app.delete('/api/agendaProgress/:id', (req, res) => {
+  const data = readDB();
+  if (!data.agendaProgress) data.agendaProgress = [];
+  data.agendaProgress = data.agendaProgress.filter((p: any) => p.id !== req.params.id);
+  writeDB(data);
+  res.json({ success: true });
+});
+
+// --- Universal Batch Import API ---
+app.post('/api/batch-import', (req, res) => {
+  const { entity, items, actor } = req.body;
+  if (!entity || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'Data import tidak valid' });
+  }
+
+  const validEntities = [
+    'students', 
+    'ustadz', 
+    'kontakan', 
+    'progress', 
+    'kontakProgress', 
+    'schedules', 
+    'kontakSchedules', 
+    'agendaEvents', 
+    'agendaProgress'
+  ];
+
+  if (!validEntities.includes(entity)) {
+    return res.status(400).json({ error: `Entity "${entity}" tidak didukung` });
+  }
+
+  const data = readDB();
+  if (!data[entity]) data[entity] = [];
+
+  const createdItems = items.map((item: any) => ({
+    id: item.id || uuidv4(),
+    ...item
+  }));
+
+  data[entity].push(...createdItems);
+  writeDB(data);
+
+  logActivity(
+    'DATA_IMPORT',
+    'IMPORT',
+    `Impor Data Massal (${entity})`,
+    `Berhasil mengimpor ${createdItems.length} rekaman data ${entity} ke dalam sistem`,
+    actor || 'Super Administrator',
+    { entity, count: createdItems.length }
+  );
+
+  res.json({ success: true, count: createdItems.length, items: createdItems });
+});
+
 app.post('/api/sync/sheets', async (req, res) => {
   const data = readDB();
   if (!data.tokens.access_token) {
@@ -524,6 +1024,16 @@ app.post('/api/sync/sheets', async (req, res) => {
               ]
           }
       });
+
+      logActivity(
+        'GOOGLE_SHEET_SYNC',
+        'SYNC',
+        'Sinkronisasi Google Sheets',
+        'Data kelompok dan pelajar berhasil disinkronkan ke Google Spreadsheet',
+        req.body?.actor || 'Super Administrator',
+        { spreadsheetId }
+      );
+
       res.json({ success: true, message: 'Synced to Google Sheets successfully' });
   } catch (err: any) {
       console.error(err);
@@ -582,7 +1092,7 @@ app.post('/api/sync/drive', async (req, res) => {
 
     try {
         const fileMetadata = {
-            name: `HalaqohPro_Backup_${new Date().toISOString().split('T')[0]}.json`,
+            name: `HalaqohApp_Backup_${new Date().toISOString().split('T')[0]}.json`,
             mimeType: 'application/json'
         };
         const media = {
@@ -594,6 +1104,16 @@ app.post('/api/sync/drive', async (req, res) => {
             media: media,
             fields: 'id'
         });
+
+        logActivity(
+          'DRIVE_BACKUP',
+          'SYNC',
+          'Pencadangan ke Google Drive',
+          `Berkas cadangan sistem berhasil diunggah ke Google Drive (ID: ${file.data.id})`,
+          req.body?.actor || 'Super Administrator',
+          { fileId: file.data.id }
+        );
+
         res.json({ success: true, fileId: file.data.id });
     } catch (err: any) {
         console.error(err);
@@ -616,6 +1136,15 @@ app.get('/api/reports/csv', (req, res) => {
             csv += `${group.id},${group.ustadz},${record.meeting},${record.date},${student},${attended}\n`;
         }
     }
+
+    const actor = (req.query.actor as string) || 'Super Administrator';
+    logActivity(
+      'DATA_EXPORT',
+      'EXPORT',
+      'Ekspor Laporan Kehadiran CSV',
+      'Rekapitulasi riwayat kehadiran progres halaqoh berhasil diunduh dalam format CSV',
+      actor
+    );
     
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="attendance_report.csv"');

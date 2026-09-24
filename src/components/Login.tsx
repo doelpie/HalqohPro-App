@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User, AppConfig } from '../types';
 
-export default function Login({ onLogin }: { onLogin: (user: User) => void }) {
+export default function Login({ 
+  onLogin, 
+  appConfig 
+}: { 
+  onLogin: (user: User) => void;
+  appConfig?: AppConfig;
+}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  const appTitle = appConfig?.title || 'HalaqohPro';
+  const appSubtitle = appConfig?.subtitle || 'LMS Management Login';
+  const logoUrl = appConfig?.logoUrl || '';
+  const initialChar = appTitle.charAt(0).toUpperCase() || 'H';
   
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -37,12 +47,22 @@ export default function Login({ onLogin }: { onLogin: (user: User) => void }) {
   };
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-[#f8fafc] px-4 py-8">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#f8fafc] px-4 py-8">
       <div className="bg-white p-6 md:p-8 rounded-xl shadow-md border border-slate-200 w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center font-bold text-white text-2xl mb-4">H</div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">HalaqohPro</h1>
-          <p className="text-sm text-slate-500 font-medium">LMS Management Login</p>
+        <div className="flex flex-col items-center mb-8 text-center">
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={appTitle} 
+              className="w-14 h-14 rounded-2xl object-contain mb-4 p-1 shadow-sm border border-slate-100 bg-white" 
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center font-bold text-white text-2xl mb-4 shadow-sm">
+              {initialChar}
+            </div>
+          )}
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">{appTitle}</h1>
+          <p className="text-sm text-slate-500 font-medium mt-0.5">{appSubtitle}</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,6 +98,28 @@ export default function Login({ onLogin }: { onLogin: (user: User) => void }) {
           </button>
         </form>
       </div>
+
+      {/* Footer Legal Links */}
+      <div className="mt-6 flex items-center gap-4 text-xs text-slate-400">
+        <a 
+          href="/privacy-policy.html" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="hover:text-emerald-700 hover:underline transition"
+        >
+          Kebijakan Privasi
+        </a>
+        <span>•</span>
+        <a 
+          href="/terms-of-service.html" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="hover:text-emerald-700 hover:underline transition"
+        >
+          Syarat & Ketentuan
+        </a>
+      </div>
     </div>
   );
 }
+

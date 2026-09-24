@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kebijakan Privasi (Privacy Policy) - Sistem Manajemen Halaqoh</title>
+  <style>
+    :root {
+      --primary: #059669;
+      --primary-dark: #047857;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 2.5rem;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+    .header-badge {
+      display: inline-block;
+      background-color: #ecfdf5;
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      margin-bottom: 1rem;
+      border: 1px solid #a7f3d0;
+    }
+    h1 {
+      font-size: 2rem;
+      color: #0f172a;
+      margin-bottom: 0.5rem;
+      line-height: 1.25;
+    }
+    .date {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      color: #0f172a;
+      margin-top: 1.75rem;
+      margin-bottom: 0.75rem;
+    }
+    p, ul {
+      margin-bottom: 1rem;
+      color: #334155;
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .highlight-box {
+      background-color: #f1f5f9;
+      border-left: 4px solid var(--primary);
+      padding: 1rem 1.25rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      margin: 1.25rem 0;
+      font-size: 0.95rem;
+    }
+    a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .footer-nav {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="header-badge">Dokumen Legal & Privasi</span>
+    <h1>Kebijakan Privasi (Privacy Policy)</h1>
+    <div class="date">Terakhir diperbarui: 24 September 2026</div>
+
+    <p>Selamat datang di <strong>Sistem Manajemen Halaqoh</strong>. Kami menghargai privasi Anda dan berkomitmen untuk melindungi informasi pribadi yang dikelola di dalam platform ini. Dokumen Kebijakan Privasi ini menjelaskan bagaimana data dikumpulkan, digunakan, dan dilindungi.</p>
+
+    <h2>1. Data yang Dikumpulkan</h2>
+    <p>Aplikasi ini mengumpulkan data yang dimasukkan secara langsung oleh pengguna terdaftar (Super Administrator dan Ustadz), yang mencakup:</p>
+    <ul>
+      <li><strong>Data Pengguna Aplikasi:</strong> Username, nama ustadz, dan password terenkripsi untuk otentikasi login.</li>
+      <li><strong>Data Santri & Halaqoh:</strong> Nama santri/pelajar, nama kelompok, nomor telepon (WhatsApp), asal daerah, riwayat kehadiran materi, dan catatan perkembangan halaqoh.</li>
+      <li><strong>Data Kontakan Santri:</strong> Data calon santri (tahap S0-S4), jadwal kontak, dan ringkasan pembahasan pembinaan.</li>
+    </ul>
+
+    <h2>2. Penggunaan Integrasi Google Workspace (Google Sheets & Google Calendar)</h2>
+    <div class="highlight-box">
+      <strong>Keterangan Khusus Google API:</strong> Aplikasi ini menyediakan integrasi opsional dengan Google Sheets, Google Calendar, dan Google Drive untuk keperluan backup dan sinkronisasi jadwal kajian.
+    </div>
+    <p>Apabila Anda menghubungkan akun Google Anda melalui OAuth:</p>
+    <ul>
+      <li>Token otentikasi Google hanya disimpan secara lokal/aman pada instalasi database Anda.</li>
+      <li>Aplikasi hanya mengakses Google Sheets untuk mengekspor rekap santri/absensi ke spreadsheet pribadi yang ditentukan pengguna.</li>
+      <li>Aplikasi hanya mengakses Google Calendar untuk menyisipkan jadwal pertemuan kajian santri ke kalender Google ustadz/admin.</li>
+      <li>Kami <strong>tidak pernah menjual, menyewakan, mentransfer, atau membagikan</strong> data Google pengguna kepada pihak ketiga mana pun.</li>
+    </ul>
+
+    <h2>3. Keamanan Data</h2>
+    <p>Data aplikasi disimpan di dalam database lokal aplikasi Anda. Kami menerapkan pembatasan akses berbasis peran (Role-Based Access Control) di mana hanya akun yang terotentikasi yang dapat melihat atau memodifikasi data santri dan kelompok masing-masing.</p>
+
+    <h2>4. Hak Pengguna atas Data</h2>
+    <p>Administrator dan Ustadz memiliki kendali penuh atas data santri:</p>
+    <ul>
+      <li>Memperbarui, mengubah status (misal dari Kontakan menjadi Pelajar aktif).</li>
+      <li>Menghapus data santri atau riwayat kontak secara permanen kapan saja.</li>
+      <li>Memutuskan sambungan integrasi Google kapan saja dari menu Integrasi.</li>
+    </ul>
+
+    <h2>5. Kontak Kami</h2>
+    <p>Jika Anda memiliki pertanyaan mengenai Kebijakan Privasi ini atau pengelolaan data di Sistem Manajemen Halaqoh, silakan hubungi administrator sistem melalui menu aplikasi atau email penanggung jawab.</p>
+
+    <div class="footer-nav">
+      <a href="/">← Kembali ke Aplikasi</a>
+      <a href="/terms-of-service.html">Syarat & Ketentuan Layanan (Terms of Service) →</a>
+    </div>
+  </div>
+</body>
+</html>

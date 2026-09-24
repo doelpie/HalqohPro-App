@@ -1,19 +1,38 @@
-import React, { useState } from 'react';
-import { Group, Schedule, User } from '../types';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Group, Schedule, Material, User } from '../types';
+import { ChevronLeft, ChevronRight, Plus, Download, Upload, Calendar as CalendarIcon, BookOpen } from 'lucide-react';
+import { downloadICS, parseICS, ICSEvent } from '../utils/icalendar';
 
 const DAYS = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-export default function CalendarPanel({ groups, schedules, refresh, user }: { groups: Group[], schedules: Schedule[], refresh: () => void, user: User }) {
+export default function CalendarPanel({
+  groups,
+  schedules,
+  materials = [],
+  refresh,
+  user
+}: {
+  groups: Group[];
+  schedules: Schedule[];
+  materials?: Material[];
+  refresh: () => void;
+  user: User;
+}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [groupId, setGroupId] = useState('');
+  const [materialId, setMaterialId] = useState('');
   const [time, setTime] = useState('16:00');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // ICS State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [icsPreview, setIcsPreview] = useState<ICSEvent[] | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   const displayedGroups = user.role === 'Super Administrator' ? groups : groups.filter(g => g.ustadz === user.ustadzName);
   
@@ -39,6 +58,7 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
     const dStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
     setSelectedDate(dStr);
     setGroupId('');
+    setMaterialId('');
     setTime('16:00');
     setTitle('');
     setDescription('');
@@ -49,6 +69,7 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
   const openEditModal = (s: Schedule) => {
     setSelectedDate(s.date);
     setGroupId(s.groupId);
+    setMaterialId(s.materialId || '');
     setTime(s.time);
     setTitle(s.title);
     setDescription(s.description);
@@ -68,6 +89,7 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         groupId,
+        materialId: materialId || undefined,
         date: selectedDate,
         time,
         title,
@@ -78,7 +100,6 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
     setIsModalOpen(false);
     refresh();
   };
-
   
   const getUpcomingSchedules = () => {
     const today = new Date();
@@ -94,14 +115,115 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
   };
   const upcoming = getUpcomingSchedules();
 
+  // ICS Export
+  const handleExportICS = () => {
+    if (schedules.length === 0) return alert('Tidak ada jadwal kajian untuk diexport');
+    const icsEvents: ICSEvent[] = schedules.map(s => {
+      const g = groups.find(grp => grp.id === s.groupId);
+      return {
+        id: s.id,
+        title: s.title,
+        description: `${s.description || ''}\nKelompok Ustadz: ${g?.ustadz || 'N/A'}`.trim(),
+        date: s.date,
+        time: s.time
+      };
+    });
+    downloadICS('Kalender_Kajian.ics', 'Kalender Kajian & Halaqoh', icsEvents);
+  };
+
+  // ICS Import
+  const handleICSSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const parsed = parseICS(text);
+      if (parsed.length === 0) {
+        alert('Tidak ditemukan event kalender yang valid pada file .ics ini.');
+        return;
+      }
+      setIcsPreview(parsed);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const confirmICSImport = async () => {
+    if (!icsPreview || icsPreview.length === 0) return;
+    setIsImporting(true);
+    try {
+      const newSchedules: Schedule[] = icsPreview.map(ev => ({
+        id: 'sch-' + Math.random().toString(36).substr(2, 9),
+        groupId: groups[0]?.id || 'default-group',
+        date: ev.date,
+        time: ev.time || '16:00',
+        title: ev.title,
+        description: ev.description || ''
+      }));
+
+      const res = await fetch('/api/batch-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entity: 'schedules', items: newSchedules })
+      });
+
+      if (res.ok) {
+        setIcsPreview(null);
+        refresh();
+        alert(`Berhasil mengimpor ${newSchedules.length} jadwal kajian!`);
+      } else {
+        alert('Gagal mengimpor jadwal ke server');
+      }
+    } catch (err) {
+      alert('Terjadi kesalahan jaringan');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900">Kalender Kajian</h2>
-        <div className="flex items-center gap-4">
-          <button onClick={prevMonth} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 transition"><ChevronLeft className="w-5 h-5 text-slate-600" /></button>
-          <span className="font-bold text-slate-800 text-lg w-40 text-center">{MONTHS[month]} {year}</span>
-          <button onClick={nextMonth} className="p-2 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 transition"><ChevronRight className="w-5 h-5 text-slate-600" /></button>
+      {/* Hidden ICS file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleICSSelect}
+        accept=".ics,text/calendar"
+        className="hidden"
+      />
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Kalender Kajian</h2>
+          <p className="text-slate-500 text-sm">Jadwal pembinaan daris dan kajian pekanan</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200">
+            <button onClick={prevMonth} className="p-1.5 hover:bg-slate-100 rounded transition"><ChevronLeft className="w-4 h-4 text-slate-600" /></button>
+            <span className="font-bold text-slate-800 text-xs w-28 text-center">{MONTHS[month]} {year}</span>
+            <button onClick={nextMonth} className="p-1.5 hover:bg-slate-100 rounded transition"><ChevronRight className="w-4 h-4 text-slate-600" /></button>
+          </div>
+
+          <button
+            onClick={handleExportICS}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition"
+            title="Export ke Google / Apple / Outlook / Android Calendar (.ics)"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            Export Kalender (.ics)
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition"
+            title="Import dari Google / Apple / Outlook / Android Calendar (.ics)"
+          >
+            <Upload className="w-3.5 h-3.5 text-slate-500" />
+            Import Kalender (.ics)
+          </button>
         </div>
       </div>
 
@@ -200,6 +322,31 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
                 </div>
               </div>
               <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                  Materi Kajian (Silabus)
+                </label>
+                <select
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  value={materialId}
+                  onChange={e => {
+                    const mId = e.target.value;
+                    setMaterialId(mId);
+                    const mat = materials.find(m => m.id === mId);
+                    if (mat && !title) {
+                      setTitle(`Pertemuan ${mat.meeting}: ${mat.title}`);
+                    }
+                  }}
+                >
+                  <option value="">-- Pilih Materi Kajian (Opsional) --</option>
+                  {materials.map(m => (
+                    <option key={m.id} value={m.id}>
+                      Pertemuan {m.meeting}: {m.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">Judul Kajian</label>
                 <input type="text" required placeholder="e.g. Pembahasan Kitab..." className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-sm" value={title} onChange={e => setTitle(e.target.value)} />
               </div>
@@ -212,6 +359,65 @@ export default function CalendarPanel({ groups, schedules, refresh, user }: { gr
                 <button type="submit" className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition-colors">Simpan</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ICS Preview Modal */}
+      {icsPreview && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl max-h-[85vh] overflow-y-auto flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5 text-emerald-600" />
+                  Konfirmasi Import Kalender (.ics)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Ditemukan <strong>{icsPreview.length} agenda kajian</strong> dari file kalender (Google/Apple/Outlook).
+                </p>
+              </div>
+              <button 
+                onClick={() => setIcsPreview(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="max-h-60 overflow-y-auto flex flex-col gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
+              {icsPreview.map((ev, idx) => (
+                <div key={idx} className="p-2.5 bg-white rounded-lg border border-slate-200 text-xs flex flex-col gap-0.5">
+                  <div className="font-bold text-slate-800 flex items-center justify-between">
+                    <span>{idx + 1}. {ev.title}</span>
+                    <span className="text-emerald-700 font-semibold text-[11px]">{ev.date} {ev.time || ''}</span>
+                  </div>
+                  {ev.description && (
+                    <div className="text-[11px] text-slate-500 line-clamp-2">
+                      {ev.description}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIcsPreview(null)}
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isImporting}
+                onClick={confirmICSImport}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition disabled:opacity-50"
+              >
+                {isImporting ? 'Mengimpor...' : `Impor ${icsPreview.length} Agenda ke Kalender`}
+              </button>
+            </div>
           </div>
         </div>
       )}

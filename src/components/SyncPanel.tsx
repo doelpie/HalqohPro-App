@@ -109,10 +109,6 @@ export default function SyncPanel() {
     }
   };
 
-  const handleExportCSV = () => {
-    window.open('/api/reports/csv', '_blank');
-  };
-
   return (
     <div className="flex flex-col gap-6">
       
@@ -226,19 +222,6 @@ export default function SyncPanel() {
               className="px-5 py-2 w-full sm:w-auto bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 text-sm font-bold rounded-lg transition-colors disabled:opacity-50 shadow-sm shrink-0 whitespace-nowrap"
             >
               {syncing ? 'Backing up...' : 'Backup ke Drive'}
-            </button>
-          </div>
-
-          <div className="p-5 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-300 transition-colors">
-            <div>
-              <h4 className="font-bold text-slate-800">Export Laporan CSV</h4>
-              <p className="text-sm font-medium text-slate-500 mt-1">Download rekap presensi seluruh kelompok untuk record eksternal.</p>
-            </div>
-            <button 
-              onClick={handleExportCSV}
-              className="px-5 py-2 w-full sm:w-auto bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg transition-colors shadow-sm shrink-0 whitespace-nowrap"
-            >
-              Download CSV
             </button>
           </div>
         </div>

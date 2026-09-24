@@ -1,0 +1,347 @@
+{
+  "groups": [
+    {
+      "id": "g1",
+      "ustadz": "Teguh",
+      "students": [
+        "Anjar",
+        "Fharien",
+        "Yusuf"
+      ]
+    },
+    {
+      "id": "g2",
+      "ustadz": "Ahmad Surya",
+      "students": [
+        "Naufal",
+        "Alfan",
+        "Rayyan",
+        "Muzakki"
+      ]
+    },
+    {
+      "id": "g3",
+      "ustadz": "Adi",
+      "students": [
+        "Wahyu",
+        "Alfian",
+        "Imam",
+        "Ayyubi"
+      ]
+    },
+    {
+      "id": "g4",
+      "ustadz": "Margo",
+      "students": [
+        "Sayid",
+        "Apri"
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "id": "m1",
+      "meeting": 1,
+      "title": "Dosa Investasi",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m2",
+      "meeting": 2,
+      "title": "Pahala Investasi",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m3",
+      "meeting": 3,
+      "title": "Visi Link Materi",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m4",
+      "meeting": 4,
+      "title": "Aqidah Pondasi",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m5",
+      "meeting": 5,
+      "title": "Teori Berfikir 1",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m6",
+      "meeting": 6,
+      "title": "Teori Berfikir 2",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m7",
+      "meeting": 7,
+      "title": "Teori Berfikir 3",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m8",
+      "meeting": 8,
+      "title": "Pemecah Aqidah 1",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m9",
+      "meeting": 9,
+      "title": "Pemecah Aqidah 2 dan 3",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m10",
+      "meeting": 10,
+      "title": "Tujuan Hidup Manusia",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m11",
+      "meeting": 11,
+      "title": "Makna Qodho dan Qodar",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m12",
+      "meeting": 12,
+      "title": "Makna Hidayah dan Dholalah",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m13",
+      "meeting": 13,
+      "title": "Makna Tawakkal dalam Islam",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m14",
+      "meeting": 14,
+      "title": "Makna Rejeki dalam Islam",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m15",
+      "meeting": 15,
+      "title": "Makna Ajal Dalam Islam",
+      "slideLink": "",
+      "videoLink": ""
+    },
+    {
+      "id": "m16",
+      "meeting": 16,
+      "title": "Kedudukan Doa Dalam Islam",
+      "slideLink": "",
+      "videoLink": ""
+    }
+  ],
+  "progress": [],
+  "schedules": [],
+  "students": [
+    {
+      "id": "s_1790219559196_0.647798280492065",
+      "name": "Anjar",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.8136298401725959",
+      "name": "Fharien",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.8204854315108572",
+      "name": "Yusuf",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.2814501869947985",
+      "name": "Naufal",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.1681123604347452",
+      "name": "Alfan",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.4849144365418585",
+      "name": "Rayyan",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.6296304417872791",
+      "name": "Muzakki",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.019786935351481683",
+      "name": "Wahyu",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.21001071575418973",
+      "name": "Alfian",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.2513949203001862",
+      "name": "Imam",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.1934497673610136",
+      "name": "Ayyubi",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.49418915033595967",
+      "name": "Sayid",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    },
+    {
+      "id": "s_1790219559196_0.8775585515564353",
+      "name": "Apri",
+      "origin": "",
+      "address": "",
+      "phone": "",
+      "createdBy": "System"
+    }
+  ],
+  "ustadz": [
+    {
+      "id": "u_1790219559196_0.42036039519859836",
+      "name": "Teguh",
+      "origin": "",
+      "address": "",
+      "phone": ""
+    },
+    {
+      "id": "u_1790219559196_0.21082831709876393",
+      "name": "Ahmad Surya",
+      "origin": "",
+      "address": "",
+      "phone": ""
+    },
+    {
+      "id": "u_1790219559196_0.8107710564126693",
+      "name": "Adi",
+      "origin": "",
+      "address": "",
+      "phone": ""
+    },
+    {
+      "id": "u_1790219559196_0.7376667590027535",
+      "name": "Margo",
+      "origin": "",
+      "address": "",
+      "phone": ""
+    }
+  ],
+  "tokens": {},
+  "users": [
+    {
+      "id": "u1",
+      "username": "Admin Teguh",
+      "password": "@Teguh9495",
+      "role": "Super Administrator",
+      "ustadzName": "Teguh"
+    },
+    {
+      "id": "u2",
+      "username": "Ustadz Margo",
+      "password": "@000MuslimBali",
+      "role": "Super Administrator",
+      "ustadzName": "Margo"
+    },
+    {
+      "id": "u3",
+      "username": "Ustadz Adi",
+      "password": "@000MuslimBali",
+      "role": "Ustadz",
+      "ustadzName": "Adi"
+    },
+    {
+      "id": "u4",
+      "username": "Ustadz Ahmad Surya",
+      "password": "@000MuslimBali",
+      "role": "Ustadz",
+      "ustadzName": "Ahmad Surya"
+    }
+  ],
+  "appConfig": {
+    "title": "HalaqohApp",
+    "subtitle": "Dakwah Management System",
+    "logoUrl": "",
+    "faviconUrl": "",
+    "footerText": "Sistem Manajemen Halaqoh v2.4.0"
+  },
+  "agendaEvents": [],
+  "agendaProgress": [],
+  "activityLogs": [
+    {
+      "id": "log_init_1790239616565",
+      "timestamp": "2026-09-24T08:46:56.565Z",
+      "action": "CONFIG_UPDATE",
+      "category": "CONFIG",
+      "title": "Inisialisasi Sistem HalaqohPro",
+      "description": "Sistem audit trail dan log aktivitas aplikasi berhasil diaktifkan.",
+      "actor": "System",
+      "details": {
+        "version": "2.4.0"
+      }
+    }
+  ]
+}
